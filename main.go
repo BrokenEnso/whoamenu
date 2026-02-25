@@ -75,26 +75,23 @@ func readItems(r io.Reader) ([]string, error) {
 func runUI(state *appState, caseSensitive bool, fontSize int) error {
 	const maxVisibleItems = 12
 
-	root := tk.App.With("className", "WhoaMenu")
+	root := tk.App
 
-	root.Configure(
-		tk.Opt("padx", 6),
-		tk.Opt("pady", 6),
-	)
+	root.Configure(tk.Padx(6), tk.Pady(6))
 	root.WmTitle("whoamenu")
-	root.WmAttributes("-topmost", 1)
-	root.WmResizable(false, false)
+	tk.WmAttributes(root, "-topmost", 1)
+	root.SetResizable(false, false)
 
 	font := fmt.Sprintf("TkDefaultFont %d", fontSize)
 
-	outer := tk.TFrame(root)
-	outer.Pack(tk.FillX)
+	outer := root.TFrame()
+	tk.Pack(outer, tk.Fill(tk.FILL_X))
 
-	prompt := tk.TLabel(outer, tk.Text(state.promptText), tk.Font(font))
-	prompt.Pack(tk.SideLeft)
+	prompt := outer.TLabel(tk.Txt(state.promptText), tk.Font(font))
+	tk.Pack(prompt, tk.Side(tk.LEFT))
 
-	entry := tk.TEntry(outer, tk.Textvariable(&state.inputVar), tk.Font(font), tk.Width(40))
-	entry.Pack(tk.SideLeft, tk.FillX, tk.Expand)
+	entry := outer.TEntry(tk.Textvariable("inputVar"), tk.Font(font), tk.Width(40))
+	tk.Pack(entry, tk.Side(tk.LEFT), tk.Fill(tk.FILL_X), tk.Expand(1))
 
 	listHeight := len(state.filteredItems)
 	if listHeight == 0 {
@@ -104,32 +101,55 @@ func runUI(state *appState, caseSensitive bool, fontSize int) error {
 		listHeight = maxVisibleItems
 	}
 
-	list := tk.Listbox(
-		root,
-		tk.Exportselection(0),
-		tk.Height(listHeight),
-		tk.Font(font),
-	)
-	list.Pack(tk.FillBoth, tk.Expand, tk.Pady("6 0"))
+	var list *tk.ListboxWidget
+	var acceptSelection func()
+
+	createList := func() {
+		if list != nil {
+			tk.Destroy(list)
+		}
+		list = root.Listbox(
+			tk.Exportselection(0),
+			tk.Height(listHeight),
+			tk.Font(font),
+		)
+		tk.Pack(list, tk.Fill(tk.FILL_BOTH), tk.Expand(1), tk.Pady("6 0"))
+
+		tk.Bind(list, "<Double-Button-1>", tk.Command(func() {
+			idx := list.Curselection()
+			if len(idx) == 0 {
+				return
+			}
+			state.selectedIndex = idx[0]
+			acceptSelection()
+		}))
+
+		tk.Bind(list, "<ButtonRelease-1>", tk.Command(func() {
+			idx := list.Curselection()
+			if len(idx) == 0 {
+				return
+			}
+			state.selectedIndex = idx[0]
+		}))
+	}
+
+	createList()
 
 	renderList := func() {
-		list.Delete(0, tk.End)
+		createList()
 		for _, item := range state.filteredItems {
-			list.Insert(tk.End, item)
+			list.Insert(tk.END, item)
 		}
 		if len(state.filteredItems) == 0 {
 			state.selectedIndex = -1
-			return
+		} else {
+			if state.selectedIndex < 0 {
+				state.selectedIndex = 0
+			}
+			if state.selectedIndex >= len(state.filteredItems) {
+				state.selectedIndex = len(state.filteredItems) - 1
+			}
 		}
-		if state.selectedIndex < 0 {
-			state.selectedIndex = 0
-		}
-		if state.selectedIndex >= len(state.filteredItems) {
-			state.selectedIndex = len(state.filteredItems) - 1
-		}
-		list.SelectionSet(state.selectedIndex)
-		list.Activate(state.selectedIndex)
-		list.See(state.selectedIndex)
 	}
 
 	applyFilter := func(query string) {
@@ -162,13 +182,9 @@ func runUI(state *appState, caseSensitive bool, fontSize int) error {
 		if state.selectedIndex >= len(state.filteredItems) {
 			state.selectedIndex = len(state.filteredItems) - 1
 		}
-		list.SelectionClear(0, tk.End)
-		list.SelectionSet(state.selectedIndex)
-		list.Activate(state.selectedIndex)
-		list.See(state.selectedIndex)
 	}
 
-	acceptSelection := func() {
+	acceptSelection = func() {
 		if len(state.filteredItems) > 0 && state.selectedIndex >= 0 {
 			state.result = state.filteredItems[state.selectedIndex]
 		} else {
@@ -176,46 +192,32 @@ func runUI(state *appState, caseSensitive bool, fontSize int) error {
 		}
 		if state.result == "" {
 			state.accept = false
-			root.Destroy()
+			tk.Destroy(root)
 			return
 		}
 		state.accept = true
-		root.Destroy()
+		tk.Destroy(root)
 	}
 
 	cancel := func() {
 		state.accept = false
-		root.Destroy()
+		tk.Destroy(root)
 	}
 
-	entry.Bind("<KeyRelease>", func(_ tk.Event) { applyFilter(state.inputVar) })
-	entry.Bind("<Down>", func(_ tk.Event) { moveSelection(1) })
-	entry.Bind("<Up>", func(_ tk.Event) { moveSelection(-1) })
-	entry.Bind("<Return>", func(_ tk.Event) { acceptSelection() })
-	entry.Bind("<Escape>", func(_ tk.Event) { cancel() })
-
-	list.Bind("<Double-Button-1>", func(_ tk.Event) {
-		idx := list.Curselection()
-		if len(idx) == 0 {
-			return
-		}
-		state.selectedIndex = idx[0]
-		acceptSelection()
-	})
-
-	list.Bind("<ButtonRelease-1>", func(_ tk.Event) {
-		idx := list.Curselection()
-		if len(idx) == 0 {
-			return
-		}
-		state.selectedIndex = idx[0]
-	})
+	tk.Bind(entry, "<KeyRelease>", tk.Command(func() {
+		state.inputVar = entry.Textvariable()
+		applyFilter(state.inputVar)
+	}))
+	tk.Bind(entry, "<Down>", tk.Command(func() { moveSelection(1) }))
+	tk.Bind(entry, "<Up>", tk.Command(func() { moveSelection(-1) }))
+	tk.Bind(entry, "<Return>", tk.Command(func() { acceptSelection() }))
+	tk.Bind(entry, "<Escape>", tk.Command(func() { cancel() }))
 
 	renderList()
-	entry.Focus()
+	tk.Focus(entry)
 
-	root.Bind("<Escape>", func(_ tk.Event) { cancel() })
-	root.Bind("<Return>", func(_ tk.Event) { acceptSelection() })
+	tk.Bind(root, "<Escape>", tk.Command(func() { cancel() }))
+	tk.Bind(root, "<Return>", tk.Command(func() { acceptSelection() }))
 
 	root.Center().Wait()
 	return nil

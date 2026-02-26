@@ -1,6 +1,6 @@
 # whoamenu
 
-A small dmenu-like launcher written in Go, now using **Wails** for the UI.
+A small dmenu-like launcher written in **.NET** using **Avalonia UI**.
 
 ## Features
 
@@ -15,7 +15,7 @@ A small dmenu-like launcher written in Go, now using **Wails** for the UI.
 ## Usage
 
 ```bash
-printf "firefox\nnotepad\ncalc\n" | go run . -p "run: "
+printf "firefox\nnotepad\ncalc\n" | dotnet run -- -p "run: "
 ```
 
 ### Flags
@@ -27,11 +27,11 @@ printf "firefox\nnotepad\ncalc\n" | go run . -p "run: "
 ## Build
 
 ```bash
-go build -o whoamenu .
+dotnet build
 ```
 
-For a Windows executable:
+For a self-contained executable, publish for your target runtime:
 
 ```bash
-go build -o whoamenu.exe .
+dotnet publish -c Release -r win-x64 --self-contained true
 ```

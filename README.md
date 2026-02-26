@@ -1,6 +1,6 @@
 # whoamenu
 
-A small dmenu-like launcher written in Go, using **TK9.0** for the UI.
+A small dmenu-like launcher written in Go, now using **Wails** for the UI.
 
 ## Features
 
@@ -10,6 +10,7 @@ A small dmenu-like launcher written in Go, using **TK9.0** for the UI.
 - `Enter` accepts selected item and prints to `stdout`
 - `Esc` cancels (exit code `1`)
 - Optional case-sensitive matching
+- Frameless, always-on-top window
 
 ## Usage
 
@@ -23,10 +24,13 @@ printf "firefox\nnotepad\ncalc\n" | go run . -p "run: "
 - `-case-sensitive` enable case-sensitive filtering
 - `-font-size` set font size (default: `12`)
 
-## Notes for Windows
+## Build
 
-The app is implemented with TK9.0 and is intended to work on Windows.
-Build an executable with:
+```bash
+go build -o whoamenu .
+```
+
+For a Windows executable:
 
 ```bash
 go build -o whoamenu.exe .

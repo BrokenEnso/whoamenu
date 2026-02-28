@@ -11,6 +11,12 @@ internal static class Program
         var options = CliOptions.Parse(args);
         var items = ReadItems(Console.In);
 
+        if(items.Count == 0)
+        {
+            Console.Error.WriteLine("No items provided");
+            return 1;
+        }
+
         Session.Options = options;
         Session.Items = items;
 

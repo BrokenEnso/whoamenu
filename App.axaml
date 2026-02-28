@@ -1,4 +1,20 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="WhoaMenu.App">
+             x:Class="WhoaMenu.App"
+             RequestedThemeVariant="Default">    
+    <Application.Styles>
+        <FluentTheme />
+        <!-- Global: remove the focused blue border for all TextBoxes -->
+        <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <!-- Optional: if the focus state also changes thickness -->
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <!-- Optional: also keep it non-blue in the normal state -->
+        <Style Selector="TextBox /template/ Border#PART_BorderElement">
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+    </Application.Styles>
 </Application>

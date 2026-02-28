@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -12,11 +13,11 @@ public class MainWindow : Window
     private readonly TextBox _input;
     private readonly ListBox _list;
 
-    public MainWindow(IReadOnlyList<string> items, CliOptions options)
+    internal MainWindow(IReadOnlyList<string> items, CliOptions options)
     {
         _allItems = items;
         _caseSensitive = options.CaseSensitive;
-
+        
         Width = 720;
         Height = 360;
         CanResize = false;
@@ -25,29 +26,32 @@ public class MainWindow : Window
 
         var root = new DockPanel();
 
-        var header = new StackPanel
+        var header = new DockPanel
         {
-            Orientation = Orientation.Horizontal,
-            Spacing = 8,
-            Margin = new Thickness(8)
+            LastChildFill = true,
+            //Margin = new Thickness(8)
         };
 
-        header.Children.Add(new TextBlock
+        var promptBlock = new TextBlock
         {
             Text = options.Prompt,
             FontSize = options.FontSize,
-            VerticalAlignment = VerticalAlignment.Center
-        });
+            VerticalAlignment = VerticalAlignment.Center,
+            [DockPanel.DockProperty] = Dock.Left
+        };
 
         _input = new TextBox
         {
             FontSize = options.FontSize,
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            [DockPanel.DockProperty] = Dock.Top
+            BorderThickness = new Thickness(0),
         };
+        //_input.Classes.
+        //_input.se
         _input.AttachedToVisualTree += (_, _) => _input.Focus();
         _input.KeyDown += HandleInputKeyDown;
         _input.TextChanged += (_, _) => ApplyFilter();
+        header.Children.Add(promptBlock);
         header.Children.Add(_input);
 
         DockPanel.SetDock(header, Dock.Top);
@@ -55,8 +59,9 @@ public class MainWindow : Window
 
         _list = new ListBox
         {
-            Margin = new Thickness(8, 0, 8, 8),
-            FontSize = options.FontSize
+            //Margin = new Thickness(8, 0, 8, 8),
+            FontSize = options.FontSize,
+            ItemsSource = _allItems
         };
         _list.DoubleTapped += (_, _) => AcceptSelection();
         root.Children.Add(_list);
@@ -107,7 +112,10 @@ public class MainWindow : Window
         }
 
         _list.SelectedIndex = next;
-        _list.ScrollIntoView(_list.SelectedItem);
+        if (_list.SelectedItem != null)
+        {
+            _list.ScrollIntoView(_list.SelectedItem);
+        }
     }
 
     private void ApplyFilter()

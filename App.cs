@@ -26,6 +26,12 @@ public class App : Application
             var target = screens[monitorIndex];
             var workingArea = target.WorkingArea;
 
+            var effectiveLines = MainWindow.CalculateLinesForAvailableHeight(
+                workingArea.Height / target.Scaling,
+                Session.Options.Lines,
+                Session.Options.FontSize);
+            desktop.MainWindow.Height = MainWindow.CalculateWindowHeight(effectiveLines, Session.Options.FontSize);
+
             var windowWidth = (int)Math.Round(desktop.MainWindow.Width * target.Scaling);
             var windowHeight = (int)Math.Round(desktop.MainWindow.Height * target.Scaling);
 

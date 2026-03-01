@@ -151,15 +151,36 @@ public class MainWindow : Window
     }
 
 
-    private static double CalculateWindowHeight(int lines, int fontSize)
+    internal static double CalculateWindowHeight(int lines, int fontSize)
     {
         var lineCount = Math.Max(1, lines);
-        var rowHeight = Math.Max(18, fontSize + 10);
-        const int headerHeight = 44;
-        const int verticalPadding = 12;
+        var rowHeight = GetListRowHeight(fontSize);
+        var nonListHeight = GetNonListHeight(fontSize);
 
-        return headerHeight + verticalPadding + (lineCount * rowHeight);
+        return nonListHeight + (lineCount * rowHeight);
     }
+
+    internal static int CalculateLinesForAvailableHeight(double availableHeight, int requestedLines, int fontSize)
+    {
+        var nonListHeight = GetNonListHeight(fontSize);
+        var rowHeight = GetListRowHeight(fontSize);
+        var listHeight = Math.Max(0, availableHeight - nonListHeight);
+        var maxLines = Math.Max(1, (int)Math.Floor(listHeight / rowHeight));
+
+        return Math.Clamp(requestedLines, 1, maxLines);
+    }
+
+    private static int GetListRowHeight(int fontSize)
+    {
+        return Math.Max(18, fontSize + 10);
+    }
+
+    private static int GetNonListHeight(int fontSize)
+    {
+        // Height used by controls outside the list: prompt/input row and surrounding spacing.
+        return Math.Max(44, fontSize + 24) + 12;
+    }
+
     private void CancelSelection()
     {
         Session.Accepted = false;

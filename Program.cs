@@ -54,13 +54,14 @@ internal static class Program
     }
 }
 
-internal sealed record CliOptions(string Prompt, bool CaseSensitive, int FontSize)
+internal sealed record CliOptions(string Prompt, bool CaseSensitive, int FontSize, int Monitor)
 {
     public static CliOptions Parse(string[] args)
     {
         var prompt = ">";
         var caseSensitive = false;
         var fontSize = 12;
+        var monitor = 0;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -75,16 +76,19 @@ internal sealed record CliOptions(string Prompt, bool CaseSensitive, int FontSiz
                 case "-font-size" when i + 1 < args.Length && int.TryParse(args[++i], out var parsed):
                     fontSize = parsed;
                     break;
+                case "-m" when i + 1 < args.Length && int.TryParse(args[++i], out var parsed):
+                    monitor = parsed - 1; //ajusting form the logical to array index
+                    break;
             }
         }
 
-        return new CliOptions(prompt, caseSensitive, fontSize);
+        return new CliOptions(prompt, caseSensitive, fontSize, monitor);
     }
 }
 
 internal static class Session
 {
-    public static CliOptions Options { get; set; } = new(">", false, 12);
+    public static CliOptions Options { get; set; } = new(">", false, 12, 0);
     public static IReadOnlyList<string> Items { get; set; } = Array.Empty<string>();
     public static bool Accepted { get; set; }
     public static string Result { get; set; } = string.Empty;

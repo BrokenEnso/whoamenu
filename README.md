@@ -25,6 +25,7 @@ printf "firefox\nnotepad\ncalc\n" | dotnet run -- -p "run: "
 - `-font-size` set font size (default: `12`)
 - `-m` choose monitor number (1-based, default: `1`)
 - `-b` place the menu at the bottom of the selected monitor's working area
+- `-l` set number of visible lines and adjust window height (default: `10`)
 
 ## Build
 

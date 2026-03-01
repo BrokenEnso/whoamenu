@@ -19,7 +19,7 @@ public class MainWindow : Window
         _caseSensitive = options.CaseSensitive;
         
         Width = 720;
-        Height = 360;
+        Height = CalculateWindowHeight(options.Lines, options.FontSize);
         CanResize = false;
         Topmost = true;
         SystemDecorations = SystemDecorations.None;
@@ -150,6 +150,16 @@ public class MainWindow : Window
         Close();
     }
 
+
+    private static double CalculateWindowHeight(int lines, int fontSize)
+    {
+        var lineCount = Math.Max(1, lines);
+        var rowHeight = Math.Max(18, fontSize + 10);
+        const int headerHeight = 44;
+        const int verticalPadding = 12;
+
+        return headerHeight + verticalPadding + (lineCount * rowHeight);
+    }
     private void CancelSelection()
     {
         Session.Accepted = false;

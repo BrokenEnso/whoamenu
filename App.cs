@@ -24,12 +24,15 @@ public class App : Application
             var screens = desktop.MainWindow.Screens.All;
             var monitorIndex = Math.Clamp(Session.Options.Monitor, 0, screens.Count - 1);
             var target = screens[monitorIndex];
-            var wa = target.WorkingArea;
+            var workingArea = target.WorkingArea;
 
-            var x = wa.X + (wa.Width - (int)desktop.MainWindow.Width) / 2;
+            var windowWidth = (int)Math.Round(desktop.MainWindow.Width * target.Scaling);
+            var windowHeight = (int)Math.Round(desktop.MainWindow.Height * target.Scaling);
+
+            var x = workingArea.X + (workingArea.Width - windowWidth) / 2;
             var y = Session.Options.Bottom
-                ? wa.Y + wa.Height - (int)desktop.MainWindow.Height
-                : wa.Y;
+                ? workingArea.Bottom - windowHeight
+                : workingArea.Y;
 
             desktop.MainWindow.Position = new PixelPoint(x, y);
         }

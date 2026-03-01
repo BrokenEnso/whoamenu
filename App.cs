@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 
@@ -17,13 +18,20 @@ public class App : Application
         {
             desktop.MainWindow = new MainWindow(Session.Items, Session.Options)
             {
-                WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterScreen,
+                WindowStartupLocation = WindowStartupLocation.Manual,
             };
 
             var screens = desktop.MainWindow.Screens.All;
-            var target = screens.Count > Session.Options.Monitor ? screens[Session.Options.Monitor] : desktop.MainWindow.Screens.Primary ?? screens[0]; // fallback
+            var monitorIndex = Math.Clamp(Session.Options.Monitor, 0, screens.Count - 1);
+            var target = screens[monitorIndex];
             var wa = target.WorkingArea;
-            desktop.MainWindow.Position = new PixelPoint(wa.X + 50, wa.Y + 50);
+
+            var x = wa.X + (wa.Width - (int)desktop.MainWindow.Width) / 2;
+            var y = Session.Options.Bottom
+                ? wa.Y + wa.Height - (int)desktop.MainWindow.Height
+                : wa.Y;
+
+            desktop.MainWindow.Position = new PixelPoint(x, y);
         }
 
         base.OnFrameworkInitializationCompleted();

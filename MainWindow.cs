@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 
 namespace WhoaMenu;
 
@@ -19,8 +20,6 @@ public class MainWindow : Window
         _caseSensitive = options.CaseSensitive;
         
         Width = 720;
-        Height = CalculateWindowHeight(options.Lines, options.FontSize);
-        CanResize = false;
         Topmost = true;
         SystemDecorations = SystemDecorations.None;
 
@@ -29,7 +28,6 @@ public class MainWindow : Window
         var header = new DockPanel
         {
             LastChildFill = true,
-            //Margin = new Thickness(8)
         };
 
         var promptBlock = new TextBlock
@@ -46,11 +44,11 @@ public class MainWindow : Window
             HorizontalAlignment = HorizontalAlignment.Stretch,
             BorderThickness = new Thickness(0),
         };
-        //_input.Classes.
-        //_input.se
+        
         _input.AttachedToVisualTree += (_, _) => _input.Focus();
         _input.KeyDown += HandleInputKeyDown;
         _input.TextChanged += (_, _) => ApplyFilter();
+
         header.Children.Add(promptBlock);
         header.Children.Add(_input);
 
@@ -59,7 +57,6 @@ public class MainWindow : Window
 
         _list = new ListBox
         {
-            //Margin = new Thickness(8, 0, 8, 8),
             FontSize = options.FontSize,
             ItemsSource = _allItems
         };
@@ -67,8 +64,18 @@ public class MainWindow : Window
         root.Children.Add(_list);
 
         Content = root;
+        
 
-        ApplyFilter();
+        //Calculating the height(text area + items to display) after the actual item heights are avialable
+        Loaded += (_, _) =>
+        {
+            var t = this;
+            if(_list.ContainerFromIndex(0) is ListBoxItem item)
+            {
+                Height = _input.Bounds.Height + (item.Bounds.Height * options.Lines);
+            }
+
+        };
     }
 
     private void HandleInputKeyDown(object? sender, KeyEventArgs e)
@@ -148,37 +155,6 @@ public class MainWindow : Window
         Session.Accepted = !string.IsNullOrWhiteSpace(result);
         Session.Result = result ?? string.Empty;
         Close();
-    }
-
-
-    internal static double CalculateWindowHeight(int lines, int fontSize)
-    {
-        var lineCount = Math.Max(1, lines);
-        var rowHeight = GetListRowHeight(fontSize);
-        var nonListHeight = GetNonListHeight(fontSize);
-
-        return nonListHeight + (lineCount * rowHeight);
-    }
-
-    internal static int CalculateLinesForAvailableHeight(double availableHeight, int requestedLines, int fontSize)
-    {
-        var nonListHeight = GetNonListHeight(fontSize);
-        var rowHeight = GetListRowHeight(fontSize);
-        var listHeight = Math.Max(0, availableHeight - nonListHeight);
-        var maxLines = Math.Max(1, (int)Math.Floor(listHeight / rowHeight));
-
-        return Math.Clamp(requestedLines, 1, maxLines);
-    }
-
-    private static int GetListRowHeight(int fontSize)
-    {
-        return Math.Max(18, fontSize + 10);
-    }
-
-    private static int GetNonListHeight(int fontSize)
-    {
-        // Height used by controls outside the list: prompt/input row and surrounding spacing.
-        return Math.Max(44, fontSize + 24) + 12;
     }
 
     private void CancelSelection()

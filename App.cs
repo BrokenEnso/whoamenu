@@ -18,7 +18,7 @@ public class App : Application
         {
             desktop.MainWindow = new MainWindow(Session.Items, Session.Options)
             {
-                WindowStartupLocation = WindowStartupLocation.Manual,
+                WindowStartupLocation = WindowStartupLocation.Manual
             };
 
             var screens = desktop.MainWindow.Screens.All;
@@ -26,19 +26,13 @@ public class App : Application
             var target = screens[monitorIndex];
             var workingArea = target.WorkingArea;
 
-            var effectiveLines = MainWindow.CalculateLinesForAvailableHeight(
-                workingArea.Height / target.Scaling,
-                Session.Options.Lines,
-                Session.Options.FontSize);
-            desktop.MainWindow.Height = MainWindow.CalculateWindowHeight(effectiveLines, Session.Options.FontSize);
-
             var windowWidth = (int)Math.Round(desktop.MainWindow.Width * target.Scaling);
             var windowHeight = (int)Math.Round(desktop.MainWindow.Height * target.Scaling);
 
             var x = workingArea.X + (workingArea.Width - windowWidth) / 2;
             var y = Session.Options.Bottom
                 ? workingArea.Bottom - windowHeight
-                : workingArea.Y;
+                : target.Bounds.Center.Y - (int)(desktop.MainWindow.Height/2);//workingArea.Y;
 
             desktop.MainWindow.Position = new PixelPoint(x, y);
         }

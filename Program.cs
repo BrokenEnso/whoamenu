@@ -109,7 +109,7 @@ internal sealed record CliOptions(
                     break;
                 case "-nb" when i + 1 < args.Length:
                     var colorText = args[++i];
-                    if (!Color.TryParse(colorText, out var parsedColor))
+                    if (!TryParseColor(colorText, out var parsedColor))
                     {
                         Console.Error.WriteLine($"Invalid color for -nb: '{colorText}'");
                         Environment.Exit(1);
@@ -119,7 +119,7 @@ internal sealed record CliOptions(
                     break;
                 case "-nf" when i + 1 < args.Length:
                     colorText = args[++i];
-                    if (!Color.TryParse(colorText, out parsedColor))
+                    if (!TryParseColor(colorText, out parsedColor))
                     {
                         Console.Error.WriteLine($"Invalid color for -nf: '{colorText}'");
                         Environment.Exit(1);
@@ -129,7 +129,7 @@ internal sealed record CliOptions(
                     break;
                 case "-sb" when i + 1 < args.Length:
                     colorText = args[++i];
-                    if (!Color.TryParse(colorText, out parsedColor))
+                    if (!TryParseColor(colorText, out parsedColor))
                     {
                         Console.Error.WriteLine($"Invalid color for -sb: '{colorText}'");
                         Environment.Exit(1);
@@ -139,7 +139,7 @@ internal sealed record CliOptions(
                     break;
                 case "-sf" when i + 1 < args.Length:
                     colorText = args[++i];
-                    if (!Color.TryParse(colorText, out parsedColor))
+                    if (!TryParseColor(colorText, out parsedColor))
                     {
                         Console.Error.WriteLine($"Invalid color for -sf: '{colorText}'");
                         Environment.Exit(1);
@@ -162,6 +162,30 @@ internal sealed record CliOptions(
             normalForeground,
             selectedBackground,
             selectedForeground);
+    }
+
+    private static bool TryParseColor(string value, out Color color)
+    {
+        if (Color.TryParse(value, out color))
+        {
+            return true;
+        }
+
+        if ((value.Length == 4 || value.Length == 7) && value[0] == '#')
+        {
+            try
+            {
+                var htmlColor = System.Drawing.ColorTranslator.FromHtml(value);
+                color = Color.FromArgb(htmlColor.A, htmlColor.R, htmlColor.G, htmlColor.B);
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                // Fall through to a failed parse result.
+            }
+        }
+
+        return false;
     }
 }
 

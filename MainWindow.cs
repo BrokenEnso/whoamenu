@@ -12,11 +12,15 @@ public class MainWindow : Window
     private readonly bool _caseSensitive;
     private readonly TextBox _input;
     private readonly ListBox _list;
+    private readonly Color? _selectedBackground;
+    private readonly Color? _selectedForeground;
 
     internal MainWindow(IReadOnlyList<string> items, CliOptions options)
     {
         _allItems = items;
         _caseSensitive = options.CaseSensitive;
+        _selectedBackground = options.SelectedBackground;
+        _selectedForeground = options.SelectedForeground;
         
         Width = 720;
         Topmost = true;
@@ -52,6 +56,11 @@ public class MainWindow : Window
             [DockPanel.DockProperty] = Dock.Left
         };
 
+        if (options.NormalForeground is { } promptForeground)
+        {
+            promptBlock.Foreground = new SolidColorBrush(promptForeground);
+        }
+
         _input = new TextBox
         {
             FontSize = options.FontSize,
@@ -62,6 +71,11 @@ public class MainWindow : Window
         if (options.NormalBackground is { } inputBackground)
         {
             _input.Background = new SolidColorBrush(inputBackground);
+        }
+
+        if (options.NormalForeground is { } inputForeground)
+        {
+            _input.Foreground = new SolidColorBrush(inputForeground);
         }
         
         _input.AttachedToVisualTree += (_, _) => _input.Focus();
@@ -84,6 +98,13 @@ public class MainWindow : Window
         {
             _list.Background = new SolidColorBrush(listBackground);
         }
+
+        if (options.NormalForeground is { } listForeground)
+        {
+            _list.Foreground = new SolidColorBrush(listForeground);
+        }
+
+        _list.SelectionChanged += (_, _) => ApplySelectedItemColors();
         _list.DoubleTapped += (_, _) => AcceptSelection();
         root.Children.Add(_list);
 
@@ -117,6 +138,7 @@ public class MainWindow : Window
             Console.Error.WriteLine( $"X: {x} Y: {y}");
 
             Position = new PixelPoint(x, y);
+            ApplySelectedItemColors();
         };
 
         ApplyFilter();
@@ -176,6 +198,49 @@ public class MainWindow : Window
 
         _list.ItemsSource = filtered;
         _list.SelectedIndex = filtered.Count > 0 ? 0 : -1;
+        ApplySelectedItemColors();
+    }
+
+
+    private void ApplySelectedItemColors()
+    {
+        if (_selectedBackground is null && _selectedForeground is null)
+        {
+            return;
+        }
+
+        for (var index = 0; index < _list.ItemCount; index++)
+        {
+            if (_list.ContainerFromIndex(index) is not ListBoxItem item)
+            {
+                continue;
+            }
+
+            if (index == _list.SelectedIndex)
+            {
+                if (_selectedBackground is { } selectedBackground)
+                {
+                    item.Background = new SolidColorBrush(selectedBackground);
+                }
+
+                if (_selectedForeground is { } selectedForeground)
+                {
+                    item.Foreground = new SolidColorBrush(selectedForeground);
+                }
+            }
+            else
+            {
+                if (_selectedBackground is not null)
+                {
+                    item.ClearValue(ListBoxItem.BackgroundProperty);
+                }
+
+                if (_selectedForeground is not null)
+                {
+                    item.ClearValue(ListBoxItem.ForegroundProperty);
+                }
+            }
+        }
     }
 
     private bool Matches(string item, string query)

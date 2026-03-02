@@ -135,8 +135,6 @@ public class MainWindow : Window
                 y = workingArea.Y;
             }
 
-            Console.Error.WriteLine( $"X: {x} Y: {y}");
-
             Position = new PixelPoint(x, y);
             ApplySelectedItemColors();
         };

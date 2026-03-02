@@ -166,23 +166,11 @@ internal sealed record CliOptions(
 
     private static bool TryParseColor(string value, out Color color)
     {
-        if (Color.TryParse(value, out color))
+        string norValue = (value.Length == 3 || value.Length == 6) ? $"#{value}" : value;  
+
+        if (Color.TryParse(norValue, out color))
         {
             return true;
-        }
-
-        if ((value.Length == 4 || value.Length == 7) && value[0] == '#')
-        {
-            try
-            {
-                var htmlColor = System.Drawing.ColorTranslator.FromHtml(value);
-                color = Color.FromArgb(htmlColor.A, htmlColor.R, htmlColor.G, htmlColor.B);
-                return true;
-            }
-            catch (ArgumentException)
-            {
-                // Fall through to a failed parse result.
-            }
         }
 
         return false;

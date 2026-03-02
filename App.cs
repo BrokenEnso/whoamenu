@@ -1,3 +1,4 @@
+using System.Security.AccessControl;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -20,21 +21,6 @@ public class App : Application
             {
                 WindowStartupLocation = WindowStartupLocation.Manual
             };
-
-            var screens = desktop.MainWindow.Screens.All;
-            var monitorIndex = Math.Clamp(Session.Options.Monitor, 0, screens.Count - 1);
-            var target = screens[monitorIndex];
-            var workingArea = target.WorkingArea;
-
-            var windowWidth = (int)Math.Round(desktop.MainWindow.Width * target.Scaling);
-            var windowHeight = (int)Math.Round(desktop.MainWindow.Height * target.Scaling);
-
-            var x = workingArea.X + (workingArea.Width - windowWidth) / 2;
-            var y = Session.Options.Bottom
-                ? workingArea.Bottom - windowHeight
-                : target.Bounds.Center.Y - (int)(desktop.MainWindow.Height/2);//workingArea.Y;
-
-            desktop.MainWindow.Position = new PixelPoint(x, y);
         }
 
         base.OnFrameworkInitializationCompleted();

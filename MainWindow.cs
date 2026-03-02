@@ -2,8 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
-using Avalonia.Media;
-using Avalonia.VisualTree;
 
 namespace WhoaMenu;
 
@@ -64,18 +62,38 @@ public class MainWindow : Window
         root.Children.Add(_list);
 
         Content = root;
-        
 
         //Calculating the height(text area + items to display) after the actual item heights are avialable
         Loaded += (_, _) =>
         {
-            var t = this;
             if(_list.ContainerFromIndex(0) is ListBoxItem item)
             {
                 Height = _input.Bounds.Height + (item.Bounds.Height * options.Lines);
             }
 
+            var monitorIndex = Math.Clamp(Session.Options.Monitor, 0, Screens.All.Count - 1);
+            var target = Screens.All[monitorIndex];
+            var workingArea = target.WorkingArea;
+            var windowWidth = (int)Math.Round(Width * target.Scaling);
+            var windowHeight = (int)Math.Round(Height * target.Scaling);
+
+            var x = workingArea.X + (workingArea.Width - windowWidth) / 2;
+            var y = workingArea.Y + (workingArea.Height - windowHeight) / 2;
+            if (Session.Options.Bottom)
+            {
+                y = workingArea.Bottom - windowHeight;
+            }
+            if (Session.Options.Top)
+            {
+                y = workingArea.Y;
+            }
+
+            Console.Error.WriteLine( $"X: {x} Y: {y}");
+
+            Position = new PixelPoint(x, y);
         };
+
+        ApplyFilter();
     }
 
     private void HandleInputKeyDown(object? sender, KeyEventArgs e)

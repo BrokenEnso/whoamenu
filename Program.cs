@@ -1,5 +1,6 @@
 using System.Text;
 using Avalonia;
+using Avalonia.Media;
 
 namespace WhoaMenu;
 
@@ -54,7 +55,15 @@ internal static class Program
     }
 }
 
-internal sealed record CliOptions(string Prompt, bool CaseSensitive, int FontSize, int Monitor, bool Bottom, bool Top, int Lines)
+internal sealed record CliOptions(
+    string Prompt,
+    bool CaseSensitive,
+    int FontSize,
+    int Monitor,
+    bool Bottom,
+    bool Top,
+    int Lines,
+    Color? NormalBackground)
 {
     public static CliOptions Parse(string[] args)
     {
@@ -65,6 +74,7 @@ internal sealed record CliOptions(string Prompt, bool CaseSensitive, int FontSiz
         var bottom = false;
         var top = false;
         var lines = 10;
+        Color? normalBackground = null;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -91,16 +101,26 @@ internal sealed record CliOptions(string Prompt, bool CaseSensitive, int FontSiz
                 case "-l" when i + 1 < args.Length && int.TryParse(args[++i], out var parsed):
                     lines = Math.Max(1, parsed);
                     break;
+                case "-nb" when i + 1 < args.Length:
+                    var colorText = args[++i];
+                    if (!Color.TryParse(colorText, out var parsedColor))
+                    {
+                        Console.Error.WriteLine($"Invalid color for -nb: '{colorText}'");
+                        Environment.Exit(1);
+                    }
+
+                    normalBackground = parsedColor;
+                    break;
             }
         }
 
-        return new CliOptions(prompt, caseSensitive, fontSize, monitor, bottom, top, lines);
+        return new CliOptions(prompt, caseSensitive, fontSize, monitor, bottom, top, lines, normalBackground);
     }
 }
 
 internal static class Session
 {
-    public static CliOptions Options { get; set; } = new(">", false, 12, 0, false, false, 10);
+    public static CliOptions Options { get; set; } = new(">", false, 12, 0, false, false, 10, null);
     public static IReadOnlyList<string> Items { get; set; } = Array.Empty<string>();
     public static bool Accepted { get; set; }
     public static string Result { get; set; } = string.Empty;

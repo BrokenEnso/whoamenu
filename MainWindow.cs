@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.Media;
 
 namespace WhoaMenu;
 
@@ -21,12 +22,27 @@ public class MainWindow : Window
         Topmost = true;
         SystemDecorations = SystemDecorations.None;
 
+        if (options.NormalBackground is { } normalBackground)
+        {
+            Background = new SolidColorBrush(normalBackground);
+        }
+
         var root = new DockPanel();
+
+        if (options.NormalBackground is { } rootBackground)
+        {
+            root.Background = new SolidColorBrush(rootBackground);
+        }
 
         var header = new DockPanel
         {
             LastChildFill = true,
         };
+
+        if (options.NormalBackground is { } headerBackground)
+        {
+            header.Background = new SolidColorBrush(headerBackground);
+        }
 
         var promptBlock = new TextBlock
         {
@@ -42,6 +58,11 @@ public class MainWindow : Window
             HorizontalAlignment = HorizontalAlignment.Stretch,
             BorderThickness = new Thickness(0),
         };
+
+        if (options.NormalBackground is { } inputBackground)
+        {
+            _input.Background = new SolidColorBrush(inputBackground);
+        }
         
         _input.AttachedToVisualTree += (_, _) => _input.Focus();
         _input.KeyDown += HandleInputKeyDown;
@@ -58,6 +79,11 @@ public class MainWindow : Window
             FontSize = options.FontSize,
             ItemsSource = _allItems
         };
+
+        if (options.NormalBackground is { } listBackground)
+        {
+            _list.Background = new SolidColorBrush(listBackground);
+        }
         _list.DoubleTapped += (_, _) => AcceptSelection();
         root.Children.Add(_list);
 

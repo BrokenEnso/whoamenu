@@ -63,7 +63,10 @@ internal sealed record CliOptions(
     bool Bottom,
     bool Top,
     int Lines,
-    Color? NormalBackground)
+    Color? NormalBackground,
+    Color? NormalForeground,
+    Color? SelectedBackground,
+    Color? SelectedForeground)
 {
     public static CliOptions Parse(string[] args)
     {
@@ -75,6 +78,9 @@ internal sealed record CliOptions(
         var top = false;
         var lines = 10;
         Color? normalBackground = null;
+        Color? normalForeground = null;
+        Color? selectedBackground = null;
+        Color? selectedForeground = null;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -111,16 +117,57 @@ internal sealed record CliOptions(
 
                     normalBackground = parsedColor;
                     break;
+                case "-nf" when i + 1 < args.Length:
+                    colorText = args[++i];
+                    if (!Color.TryParse(colorText, out parsedColor))
+                    {
+                        Console.Error.WriteLine($"Invalid color for -nf: '{colorText}'");
+                        Environment.Exit(1);
+                    }
+
+                    normalForeground = parsedColor;
+                    break;
+                case "-sb" when i + 1 < args.Length:
+                    colorText = args[++i];
+                    if (!Color.TryParse(colorText, out parsedColor))
+                    {
+                        Console.Error.WriteLine($"Invalid color for -sb: '{colorText}'");
+                        Environment.Exit(1);
+                    }
+
+                    selectedBackground = parsedColor;
+                    break;
+                case "-sf" when i + 1 < args.Length:
+                    colorText = args[++i];
+                    if (!Color.TryParse(colorText, out parsedColor))
+                    {
+                        Console.Error.WriteLine($"Invalid color for -sf: '{colorText}'");
+                        Environment.Exit(1);
+                    }
+
+                    selectedForeground = parsedColor;
+                    break;
             }
         }
 
-        return new CliOptions(prompt, caseSensitive, fontSize, monitor, bottom, top, lines, normalBackground);
+        return new CliOptions(
+            prompt,
+            caseSensitive,
+            fontSize,
+            monitor,
+            bottom,
+            top,
+            lines,
+            normalBackground,
+            normalForeground,
+            selectedBackground,
+            selectedForeground);
     }
 }
 
 internal static class Session
 {
-    public static CliOptions Options { get; set; } = new(">", false, 12, 0, false, false, 10, null);
+    public static CliOptions Options { get; set; } = new(">", false, 12, 0, false, false, 10, null, null, null, null);
     public static IReadOnlyList<string> Items { get; set; } = Array.Empty<string>();
     public static bool Accepted { get; set; }
     public static string Result { get; set; } = string.Empty;

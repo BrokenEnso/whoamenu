@@ -9,7 +9,9 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
-        var options = CliOptions.Parse(args);
+        var configArgs = ConfigFile.TryLoadArgs();
+        var mergedArgs = configArgs.Concat(args).ToArray();
+        var options = CliOptions.Parse(mergedArgs);
 
         if (options.ShowHelp)
         {
@@ -59,6 +61,82 @@ internal static class Program
         }
 
         return items;
+    }
+}
+
+internal static class ConfigFile
+{
+    public static IReadOnlyList<string> TryLoadArgs()
+    {
+        var path = GetPath();
+        if (!File.Exists(path))
+        {
+            return Array.Empty<string>();
+        }
+
+        var args = new List<string>();
+
+        foreach (var rawLine in File.ReadLines(path))
+        {
+            var line = rawLine.Trim();
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#'))
+            {
+                continue;
+            }
+
+            args.AddRange(Tokenize(line));
+        }
+
+        return args;
+    }
+
+    private static string GetPath()
+    {
+        var xdgConfigHome = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+        if (!string.IsNullOrWhiteSpace(xdgConfigHome))
+        {
+            return Path.Combine(xdgConfigHome, "whoamenu", "config");
+        }
+
+        var home = Environment.GetEnvironmentVariable("HOME")
+            ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+        return Path.Combine(home, ".config", "whoamenu", "config");
+    }
+
+    private static IEnumerable<string> Tokenize(string line)
+    {
+        var token = new StringBuilder();
+        var inQuotes = false;
+
+        for (var i = 0; i < line.Length; i++)
+        {
+            var current = line[i];
+
+            if (current == '"')
+            {
+                inQuotes = !inQuotes;
+                continue;
+            }
+
+            if (!inQuotes && char.IsWhiteSpace(current))
+            {
+                if (token.Length > 0)
+                {
+                    yield return token.ToString();
+                    token.Clear();
+                }
+
+                continue;
+            }
+
+            token.Append(current);
+        }
+
+        if (token.Length > 0)
+        {
+            yield return token.ToString();
+        }
     }
 }
 
@@ -185,6 +263,8 @@ internal sealed record CliOptions(
 
     public const string UsageText =
         "-h\tshows this usage message and exits.\n" +
+        "Configuration is loaded from $XDG_CONFIG_HOME/whoamenu/config (or $HOME/.config/whoamenu/config).\n" +
+        "Command line flags override configuration file values.\n" +
         "-p <prompt>\tdefines a prompt to be displayed before the input area.\n" +
         "-case-sensitive\tmakes matching case sensitive.\n" +
         "-font-size <size>\tdefines the font size.\n" +

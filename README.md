@@ -20,6 +20,10 @@ printf "firefox\nnotepad\ncalc\n" | dotnet run -- -p "run: "
 
 ### Flags
 
+Configuration is loaded from `$XDG_CONFIG_HOME/whoamenu/config`.
+If `XDG_CONFIG_HOME` is unset, the fallback path is `$HOME/.config/whoamenu/config`.
+Command-line flags always override values from the configuration file.
+
 - `-p` prompt text (default: `>`)
 - `-case-sensitive` enable case-sensitive filtering
 - `-font-size` set font size (default: `12`)

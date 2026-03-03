@@ -12,54 +12,30 @@ public class MainWindow : Window
     private readonly bool _caseSensitive;
     private readonly TextBox _input;
     private readonly ListBox _list;
-    private readonly Color? _selectedBackground;
-    private readonly Color? _selectedForeground;
 
     internal MainWindow(IReadOnlyList<string> items, CliOptions options)
     {
         _allItems = items;
         _caseSensitive = options.CaseSensitive;
-        _selectedBackground = options.SelectedBackground;
-        _selectedForeground = options.SelectedForeground;
         
         Width = 720;
         Topmost = true;
         SystemDecorations = SystemDecorations.None;
 
-        if (options.NormalBackground is { } normalBackground)
-        {
-            Background = new SolidColorBrush(normalBackground);
-        }
-
         var root = new DockPanel();
-
-        if (options.NormalBackground is { } rootBackground)
-        {
-            root.Background = new SolidColorBrush(rootBackground);
-        }
 
         var header = new DockPanel
         {
             LastChildFill = true,
         };
 
-        if (options.NormalBackground is { } headerBackground)
-        {
-            header.Background = new SolidColorBrush(headerBackground);
-        }
-
         var promptBlock = new TextBlock
         {
             Text = options.Prompt,
             FontSize = options.FontSize,
             VerticalAlignment = VerticalAlignment.Center,
-            [DockPanel.DockProperty] = Dock.Left
+            [DockPanel.DockProperty] = Dock.Left,
         };
-
-        if (options.NormalForeground is { } promptForeground)
-        {
-            promptBlock.Foreground = new SolidColorBrush(promptForeground);
-        }
 
         _input = new TextBox
         {
@@ -68,18 +44,7 @@ public class MainWindow : Window
             BorderThickness = new Thickness(0),
         };
 
-        if (options.NormalBackground is { } inputBackground)
-        {
-            _input.Background = new SolidColorBrush(inputBackground);
-        }
-
-        if (options.NormalForeground is { } inputForeground)
-        {
-            _input.Foreground = new SolidColorBrush(inputForeground);
-        }
-        
         _input.AttachedToVisualTree += (_, _) => _input.Focus();
-        _input.KeyDown += HandleInputKeyDown;
         _input.TextChanged += (_, _) => ApplyFilter();
 
         header.Children.Add(promptBlock);
@@ -94,17 +59,43 @@ public class MainWindow : Window
             ItemsSource = _allItems
         };
 
-        if (options.NormalBackground is { } listBackground)
+
+        if (options.NormalForeground is { } normalForground)
         {
-            _list.Background = new SolidColorBrush(listBackground);
+            promptBlock.Foreground = new SolidColorBrush(normalForground);
+            _input.Foreground = new SolidColorBrush(normalForground);
+            _input.Resources["TextControlForegroundPointerOver"] = new SolidColorBrush(normalForground);
+            _input.Resources["TextControlForegroundFocused"] = new SolidColorBrush(normalForground);
+            _list.Foreground = new SolidColorBrush(normalForground);
         }
 
-        if (options.NormalForeground is { } listForeground)
+        if (options.NormalBackground is { } normalBackground)
         {
-            _list.Foreground = new SolidColorBrush(listForeground);
+            Background = new SolidColorBrush(normalBackground);
+            root.Background = new SolidColorBrush(normalBackground);
+            header.Background = new SolidColorBrush(normalBackground);
+            _input.Background = new SolidColorBrush(normalBackground);
+            _input.Resources["TextControlBackgroundPointerOver"] = new SolidColorBrush(normalBackground);
+            _input.Resources["TextControlBackgroundFocused"] = new SolidColorBrush(normalBackground);
+            _list.Background = new SolidColorBrush(normalBackground);
+            _list.Resources["Background"] = new SolidColorBrush(normalBackground);
+            _list.Resources["SystemControlHighlightListLowBrush"] = new SolidColorBrush(normalBackground);
         }
 
-        _list.SelectionChanged += (_, _) => ApplySelectedItemColors();
+
+        if(options.SelectedForeground is { } selectedForeground)
+        {
+            _list.Resources["SystemControlHighlightAltBaseHighBrush"] = new SolidColorBrush(selectedForeground);
+        }
+
+        if (options.SelectedBackground is { } selectedBackground)
+        {
+            _list.Resources["SystemControlHighlightListAccentLowBrush"] = new SolidColorBrush(selectedBackground);
+            _list.Resources["SystemControlHighlightListAccentHighBrush"] = new SolidColorBrush(selectedBackground);
+            _list.Resources["SystemControlHighlightListMediumBrush"] = new SolidColorBrush(selectedBackground);
+            _list.Resources["SystemControlHighlightListAccentMediumBrush"] = new SolidColorBrush(selectedBackground);
+        }
+
         _list.DoubleTapped += (_, _) => AcceptSelection();
         root.Children.Add(_list);
 
@@ -136,10 +127,8 @@ public class MainWindow : Window
             }
 
             Position = new PixelPoint(x, y);
-            ApplySelectedItemColors();
-        };
-
-        ApplyFilter();
+            ApplyFilter();
+        }; 
     }
 
     private void HandleInputKeyDown(object? sender, KeyEventArgs e)
@@ -196,49 +185,6 @@ public class MainWindow : Window
 
         _list.ItemsSource = filtered;
         _list.SelectedIndex = filtered.Count > 0 ? 0 : -1;
-        ApplySelectedItemColors();
-    }
-
-
-    private void ApplySelectedItemColors()
-    {
-        if (_selectedBackground is null && _selectedForeground is null)
-        {
-            return;
-        }
-
-        for (var index = 0; index < _list.ItemCount; index++)
-        {
-            if (_list.ContainerFromIndex(index) is not ListBoxItem item)
-            {
-                continue;
-            }
-
-            if (index == _list.SelectedIndex)
-            {
-                if (_selectedBackground is { } selectedBackground)
-                {
-                    item.Background = new SolidColorBrush(selectedBackground);
-                }
-
-                if (_selectedForeground is { } selectedForeground)
-                {
-                    item.Foreground = new SolidColorBrush(selectedForeground);
-                }
-            }
-            else
-            {
-                if (_selectedBackground is not null)
-                {
-                    item.ClearValue(ListBoxItem.BackgroundProperty);
-                }
-
-                if (_selectedForeground is not null)
-                {
-                    item.ClearValue(ListBoxItem.ForegroundProperty);
-                }
-            }
-        }
     }
 
     private bool Matches(string item, string query)

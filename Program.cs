@@ -10,6 +10,13 @@ internal static class Program
     public static int Main(string[] args)
     {
         var options = CliOptions.Parse(args);
+
+        if (options.ShowHelp)
+        {
+            Console.WriteLine(CliOptions.UsageText);
+            return 0;
+        }
+
         var items = ReadItems(Console.In);
 
         if(items.Count == 0)
@@ -56,6 +63,7 @@ internal static class Program
 }
 
 internal sealed record CliOptions(
+    bool ShowHelp,
     string Prompt,
     bool CaseSensitive,
     int FontSize,
@@ -71,6 +79,7 @@ internal sealed record CliOptions(
 {
     public static CliOptions Parse(string[] args)
     {
+        var showHelp = false;
         var prompt = ">";
         var caseSensitive = false;
         var fontSize = 12;
@@ -88,6 +97,9 @@ internal sealed record CliOptions(
         {
             switch (args[i])
             {
+                case "-h":
+                    showHelp = true;
+                    break;
                 case "-p" when i + 1 < args.Length:
                     prompt = args[++i];
                     break;
@@ -156,6 +168,7 @@ internal sealed record CliOptions(
         }
 
         return new CliOptions(
+            showHelp,
             prompt,
             caseSensitive,
             fontSize,
@@ -169,6 +182,21 @@ internal sealed record CliOptions(
             selectedBackground,
             selectedForeground);
     }
+
+    public const string UsageText =
+        "-h\tshows this usage message and exits.\n" +
+        "-p <prompt>\tdefines a prompt to be displayed before the input area.\n" +
+        "-case-sensitive\tmakes matching case sensitive.\n" +
+        "-font-size <size>\tdefines the font size.\n" +
+        "-fn <font>\tdefines the font.\n" +
+        "-m <monitor>\tdefines the target monitor index (1-based).\n" +
+        "-b\tdefines that menu appears at the bottom.\n" +
+        "-t\tdefines that menu appears at the top.\n" +
+        "-l <lines>\tactivates vertical list mode with the given number of lines.\n" +
+        "-nb <color>\tdefines the normal background color (#RGB, #RRGGBB, and color names are supported).\n" +
+        "-nf <color>\tdefines the normal foreground color (#RGB, #RRGGBB, and color names are supported).\n" +
+        "-sb <color>\tdefines the selected background color (#RGB, #RRGGBB, and color names are supported).\n" +
+        "-sf <color>\tdefines the selected foreground color (#RGB, #RRGGBB, and color names are supported).";
 
     private static bool TryParseColor(string value, out Color color)
     {
@@ -185,7 +213,7 @@ internal sealed record CliOptions(
 
 internal static class Session
 {
-    public static CliOptions Options { get; set; } = new(">", false, 12, null, 0, false, false, 10, null, null, null, null);
+    public static CliOptions Options { get; set; } = new(false, ">", false, 12, null, 0, false, false, 10, null, null, null, null);
     public static IReadOnlyList<string> Items { get; set; } = Array.Empty<string>();
     public static bool Accepted { get; set; }
     public static string Result { get; set; } = string.Empty;

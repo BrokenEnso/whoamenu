@@ -47,6 +47,8 @@ public class MainWindow : Window
         _input.AttachedToVisualTree += (_, _) => _input.Focus();
         _input.TextChanged += (_, _) => ApplyFilter();
 
+        KeyDown += HandleInputKeyDown;
+
         header.Children.Add(promptBlock);
         header.Children.Add(_input);
 

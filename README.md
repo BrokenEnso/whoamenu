@@ -23,6 +23,7 @@ printf "firefox\nnotepad\ncalc\n" | dotnet run -- -p "run: "
 - `-p` prompt text (default: `>`)
 - `-case-sensitive` enable case-sensitive filtering
 - `-font-size` set font size (default: `12`)
+- `-fn` set font family name used throughout the app (default: platform default)
 - `-m` choose monitor number (1-based, default: `1`)
 - `-b` place the menu at the bottom of the selected monitor's working area
 - `-t` place the menu at the top of the selected monitor's working area

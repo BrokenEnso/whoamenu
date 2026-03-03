@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Media.Fonts;
 
 namespace WhoaMenu;
 
@@ -17,6 +18,7 @@ public class MainWindow : Window
     {
         _allItems = items;
         _caseSensitive = options.CaseSensitive;
+        var fontFamily = string.IsNullOrWhiteSpace(options.FontName) ? FontFamily.Default : new FontFamily(options.FontName);
         
         Width = 720;
         Topmost = true;
@@ -33,6 +35,7 @@ public class MainWindow : Window
         {
             Text = options.Prompt,
             FontSize = options.FontSize,
+            FontFamily = fontFamily,
             VerticalAlignment = VerticalAlignment.Center,
             [DockPanel.DockProperty] = Dock.Left,
         };
@@ -40,6 +43,7 @@ public class MainWindow : Window
         _input = new TextBox
         {
             FontSize = options.FontSize,
+            FontFamily = fontFamily,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             BorderThickness = new Thickness(0),
         };
@@ -58,6 +62,7 @@ public class MainWindow : Window
         _list = new ListBox
         {
             FontSize = options.FontSize,
+            FontFamily = fontFamily,
             ItemsSource = _allItems
         };
 

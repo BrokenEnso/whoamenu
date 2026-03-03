@@ -59,6 +59,7 @@ internal sealed record CliOptions(
     string Prompt,
     bool CaseSensitive,
     int FontSize,
+    string? FontName,
     int Monitor,
     bool Bottom,
     bool Top,
@@ -73,6 +74,7 @@ internal sealed record CliOptions(
         var prompt = ">";
         var caseSensitive = false;
         var fontSize = 12;
+        string? fontName = null;
         var monitor = 0;
         var bottom = false;
         var top = false;
@@ -94,6 +96,9 @@ internal sealed record CliOptions(
                     break;
                 case "-font-size" when i + 1 < args.Length && int.TryParse(args[++i], out var parsed):
                     fontSize = parsed;
+                    break;
+                case "-fn" when i + 1 < args.Length:
+                    fontName = args[++i];
                     break;
                 case "-m" when i + 1 < args.Length && int.TryParse(args[++i], out var parsed):
                     monitor = parsed - 1; //ajusting form the logical to array index
@@ -154,6 +159,7 @@ internal sealed record CliOptions(
             prompt,
             caseSensitive,
             fontSize,
+            fontName,
             monitor,
             bottom,
             top,
@@ -179,7 +185,7 @@ internal sealed record CliOptions(
 
 internal static class Session
 {
-    public static CliOptions Options { get; set; } = new(">", false, 12, 0, false, false, 10, null, null, null, null);
+    public static CliOptions Options { get; set; } = new(">", false, 12, null, 0, false, false, 10, null, null, null, null);
     public static IReadOnlyList<string> Items { get; set; } = Array.Empty<string>();
     public static bool Accepted { get; set; }
     public static string Result { get; set; } = string.Empty;

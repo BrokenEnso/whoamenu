@@ -1,0 +1,48 @@
+name: Build Windows Release Artifact
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure tag commit is on main
+        shell: bash
+        run: |
+          git fetch origin main --depth=1
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" "origin/main"; then
+            echo "Tag commit is not reachable from main."
+            exit 1
+          fi
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Publish win-x64 release
+        run: dotnet publish -c Release -r win-x64 --self-contained true -o publish/win-x64
+
+      - name: Create zip archive
+        shell: pwsh
+        run: |
+          $zipName = "whoamenu-${{ github.ref_name }}-win-x64.zip"
+          Compress-Archive -Path "publish/win-x64/*" -DestinationPath $zipName
+
+      - name: Upload zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: whoamenu-${{ github.ref_name }}-win-x64
+          path: whoamenu-${{ github.ref_name }}-win-x64.zip

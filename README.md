@@ -12,6 +12,9 @@ A small dmenu-like launcher written in **.NET** using **Avalonia UI**.
 - Optional case-sensitive matching
 - Frameless, always-on-top window
 
+<img width="899" height="382" alt="whoamenu-v0 1 0-example config" src="https://github.com/user-attachments/assets/0070f890-b0c1-489f-b8a8-d13fd4e860f2" />
+
+
 ## Usage
 
 ```bash
@@ -48,3 +51,10 @@ For a self-contained executable, publish for your target runtime:
 ```bash
 dotnet publish -c Release -r win-x64 --self-contained true
 ```
+
+## Acknoledgements
+
+- Example color scheme: https://github.com/catppuccin/dmenu/
+- Example font: https://github.com/ryanoasis/nerd-fonts
+- Inspiration: https://tools.suckless.org/dmenu/
+- Contagious enthusiasm: https://github.com/BreadOnPenguins/

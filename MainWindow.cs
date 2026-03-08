@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Fonts;
+using Avalonia.Threading;
 
 namespace WhoaMenu;
 
@@ -13,6 +14,7 @@ public class MainWindow : Window
     private readonly bool _caseSensitive;
     private readonly TextBox _input;
     private readonly ListBox _list;
+    private bool _hasScheduledStartupFocusRetry;
 
     internal MainWindow(IReadOnlyList<string> items, CliOptions options)
     {
@@ -48,10 +50,11 @@ public class MainWindow : Window
             BorderThickness = new Thickness(0),
         };
 
-        _input.AttachedToVisualTree += (_, _) => _input.Focus();
         _input.TextChanged += (_, _) => ApplyFilter();
 
         KeyDown += HandleInputKeyDown;
+        Opened += (_, _) => EnsureInputFocus(scheduleRetry: true);
+        Activated += (_, _) => EnsureInputFocus();
 
         header.Children.Add(promptBlock);
         header.Children.Add(_input);
@@ -135,7 +138,27 @@ public class MainWindow : Window
 
             Position = new PixelPoint(x, y);
             ApplyFilter();
+            EnsureInputFocus();
         }; 
+    }
+
+    private void EnsureInputFocus(bool scheduleRetry = false)
+    {
+        Activate();
+        _input.Focus();
+
+        if (!scheduleRetry || _hasScheduledStartupFocusRetry)
+        {
+            return;
+        }
+
+        _hasScheduledStartupFocusRetry = true;
+
+        DispatcherTimer.RunOnce(() =>
+        {
+            Activate();
+            _input.Focus();
+        }, TimeSpan.FromMilliseconds(75));
     }
 
     private void HandleInputKeyDown(object? sender, KeyEventArgs e)

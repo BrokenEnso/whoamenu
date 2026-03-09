@@ -52,6 +52,7 @@ public class MainWindow : Window
         _input.TextChanged += (_, _) => ApplyFilter();
 
         KeyDown += HandleInputKeyDown;
+        GotFocus += (_, _) => { _input.Focus(); };
 
         header.Children.Add(promptBlock);
         header.Children.Add(_input);

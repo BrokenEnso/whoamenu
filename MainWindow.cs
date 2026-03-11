@@ -25,6 +25,16 @@ public class MainWindow : Window
         Topmost = true;
         SystemDecorations = SystemDecorations.None;
 
+        if (options.CornerRadius is { } cornerRadius)
+        {
+            CornerRadius = new CornerRadius(cornerRadius);
+        }
+
+        if (options.Transparency is { } transparency)
+        {
+            Opacity = transparency;
+        }
+
         var root = new DockPanel();
 
         var header = new DockPanel

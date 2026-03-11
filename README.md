@@ -42,6 +42,8 @@ Command-line flags always override values from the configuration file.
 - `-b` place the menu at the bottom of the selected monitor's working area
 - `-t` place the menu at the top of the selected monitor's working area
 - `-l` set number of visible lines and adjust window height (default: `10`)
+- `-rc [radius]` set window corner radius; if omitted, no corner radius value is applied
+- `-tr` set window transparency/opacity value (`0` to `1`)
 - `-nb` set normal background color (`#RGB`, `#RRGGBB`, or color names)
 - `-nf` set normal foreground color (`#RGB`, `#RRGGBB`, or color names)
 - `-sb` set selected item background color (`#RGB`, `#RRGGBB`, or color names)

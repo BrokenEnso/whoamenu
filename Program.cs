@@ -19,17 +19,24 @@ internal static class Program
             return 0;
         }
 
-        var items = ReadItems(Console.In);
+        Session.InputPiped = Console.IsInputRedirected; //If no piped input then collect text input
+        
+        List<string> items = new List<string>();
 
-        if(items.Count == 0)
+        if (Session.InputPiped)
+        {
+            items = ReadItems(Console.In);
+        }
+
+        if(Session.InputPiped && items.Count == 0)
         {
             Console.Error.WriteLine("No items provided");
             return 1;
         }
 
-        Session.Options = options;
         Session.Items = items;
-
+        Session.Options = options;
+        
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
 
         if (Session.Accepted && !string.IsNullOrWhiteSpace(Session.Result))
@@ -295,6 +302,7 @@ internal static class Session
 {
     public static CliOptions Options { get; set; } = new(false, ">", false, 12, null, 0, false, false, 10, null, null, null, null);
     public static IReadOnlyList<string> Items { get; set; } = Array.Empty<string>();
+    public static bool InputPiped { get; set; }
     public static bool Accepted { get; set; }
     public static string Result { get; set; } = string.Empty;
 }

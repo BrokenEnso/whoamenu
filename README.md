@@ -5,6 +5,7 @@ A small dmenu-like launcher written in **.NET** using **Avalonia UI**.
 ## Features
 
 - Reads menu entries from `stdin`
+- Input only mode when nothing in piped in
 - Filters entries as you type
 - Keyboard navigation with `Up` / `Down`
 - `Enter` accepts selected item and prints to `stdout`
@@ -17,8 +18,14 @@ A small dmenu-like launcher written in **.NET** using **Avalonia UI**.
 
 ## Usage
 
+Select a program
 ```bash
-printf "firefox\nnotepad\ncalc\n" | dotnet run -- -p "run: "
+printf "firefox\nnotepad\ncalc\n" | whoamenu- -p "Program:"
+```
+
+Get input
+```bash
+whoamenu- -p "What is Sen's real name?"
 ```
 
 ### Flags

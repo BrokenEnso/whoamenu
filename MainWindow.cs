@@ -13,6 +13,7 @@ public class MainWindow : Window
     private readonly bool _caseSensitive;
     private readonly TextBox _input;
     private readonly ListBox _list;
+    private readonly TextBlock _prompt;
 
     internal MainWindow(IReadOnlyList<string> items, CliOptions options)
     {
@@ -31,7 +32,7 @@ public class MainWindow : Window
             LastChildFill = true,
         };
 
-        var promptBlock = new TextBlock
+        _prompt = new TextBlock
         {
             Text = options.Prompt,
             FontSize = options.FontSize,
@@ -46,6 +47,7 @@ public class MainWindow : Window
             FontFamily = fontFamily,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             BorderThickness = new Thickness(0),
+            MaxLines = 1,
         };
 
         _input.AttachedToVisualTree += (_, _) => _input.Focus();
@@ -54,7 +56,7 @@ public class MainWindow : Window
         KeyDown += HandleInputKeyDown;
         GotFocus += (_, _) => { _input.Focus(); };
 
-        header.Children.Add(promptBlock);
+        header.Children.Add(_prompt);
         header.Children.Add(_input);
 
         DockPanel.SetDock(header, Dock.Top);
@@ -67,10 +69,9 @@ public class MainWindow : Window
             ItemsSource = _allItems
         };
 
-
         if (options.NormalForeground is { } normalForground)
         {
-            promptBlock.Foreground = new SolidColorBrush(normalForground);
+            _prompt.Foreground = new SolidColorBrush(normalForground);
             _input.Foreground = new SolidColorBrush(normalForground);
             _input.Resources["TextControlForegroundPointerOver"] = new SolidColorBrush(normalForground);
             _input.Resources["TextControlForegroundFocused"] = new SolidColorBrush(normalForground);
@@ -90,7 +91,6 @@ public class MainWindow : Window
             _list.Resources["SystemControlHighlightListLowBrush"] = new SolidColorBrush(normalBackground);
         }
 
-
         if(options.SelectedForeground is { } selectedForeground)
         {
             _list.Resources["SystemControlHighlightAltBaseHighBrush"] = new SolidColorBrush(selectedForeground);
@@ -105,7 +105,11 @@ public class MainWindow : Window
         }
 
         _list.DoubleTapped += (_, _) => AcceptSelection();
-        root.Children.Add(_list);
+
+        if ( Session.InputPiped )
+        {
+            root.Children.Add(_list);
+        }
 
         Content = root;
 
@@ -117,6 +121,12 @@ public class MainWindow : Window
                 Height = _input.Bounds.Height + (item.Bounds.Height * options.Lines);
             }
 
+            if (!Session.InputPiped)
+            {
+                //using prompt hight sicne _input is doing auto expanging when list isn't added.
+                Height = _prompt.Bounds.Height; 
+            }
+            
             var monitorIndex = Math.Clamp(Session.Options.Monitor, 0, Screens.All.Count - 1);
             var target = Screens.All[monitorIndex];
             var workingArea = target.WorkingArea;

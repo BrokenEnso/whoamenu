@@ -1,4 +1,5 @@
 using System.Text;
+using System.Globalization;
 using Avalonia;
 using Avalonia.Media;
 
@@ -157,6 +158,8 @@ internal sealed record CliOptions(
     bool Bottom,
     bool Top,
     int Lines,
+    double? CornerRadius,
+    double? Transparency,
     Color? NormalBackground,
     Color? NormalForeground,
     Color? SelectedBackground,
@@ -173,6 +176,8 @@ internal sealed record CliOptions(
         var bottom = false;
         var top = false;
         var lines = 10;
+        double? cornerRadius = null;
+        double? transparency = null;
         Color? normalBackground = null;
         Color? normalForeground = null;
         Color? selectedBackground = null;
@@ -208,6 +213,24 @@ internal sealed record CliOptions(
                     break;
                 case "-l" when i + 1 < args.Length && int.TryParse(args[++i], out var parsed):
                     lines = Math.Max(1, parsed);
+                    break;
+                case "-rc":
+                    if (i + 1 < args.Length && double.TryParse(args[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedRadius))
+                    {
+                        cornerRadius = Math.Max(0, parsedRadius);
+                        i++;
+                    }
+
+                    break;
+                case "-tr" when i + 1 < args.Length:
+                    var transparencyText = args[++i];
+                    if (!double.TryParse(transparencyText, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedTransparency))
+                    {
+                        Console.Error.WriteLine($"Invalid transparency for -tr: '{transparencyText}'");
+                        Environment.Exit(1);
+                    }
+
+                    transparency = Math.Clamp(parsedTransparency, 0, 1);
                     break;
                 case "-nb" when i + 1 < args.Length:
                     var colorText = args[++i];
@@ -262,6 +285,8 @@ internal sealed record CliOptions(
             bottom,
             top,
             lines,
+            cornerRadius,
+            transparency,
             normalBackground,
             normalForeground,
             selectedBackground,
@@ -280,6 +305,8 @@ internal sealed record CliOptions(
         "-b\tdefines that menu appears at the bottom.\n" +
         "-t\tdefines that menu appears at the top.\n" +
         "-l <lines>\tactivates vertical list mode with the given number of lines.\n" +
+        "-rc [radius]\tsets window corner radius; omit value to leave unchanged.\n" +
+        "-tr <0-1>\tsets the window opacity/transparency level.\n" +
         "-nb <color>\tdefines the normal background color (#RGB, #RRGGBB, and color names are supported).\n" +
         "-nf <color>\tdefines the normal foreground color (#RGB, #RRGGBB, and color names are supported).\n" +
         "-sb <color>\tdefines the selected background color (#RGB, #RRGGBB, and color names are supported).\n" +
@@ -300,7 +327,7 @@ internal sealed record CliOptions(
 
 internal static class Session
 {
-    public static CliOptions Options { get; set; } = new(false, ">", false, 12, null, 0, false, false, 10, null, null, null, null);
+    public static CliOptions Options { get; set; } = new(false, ">", false, 12, null, 0, false, false, 10, null, null, null, null, null, null);
     public static IReadOnlyList<string> Items { get; set; } = Array.Empty<string>();
     public static bool InputPiped { get; set; }
     public static bool Accepted { get; set; }

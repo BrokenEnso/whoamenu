@@ -44,6 +44,8 @@ internal static class Program
         {
             Console.OutputEncoding = Encoding.UTF8;
             Console.WriteLine(Session.Result);
+
+
             return 0;
         }
 
@@ -150,6 +152,7 @@ internal static class ConfigFile
 
 internal sealed record CliOptions(
     bool ShowHelp,
+    bool Clip,
     string Prompt,
     bool CaseSensitive,
     int FontSize,
@@ -168,6 +171,7 @@ internal sealed record CliOptions(
     public static CliOptions Parse(string[] args)
     {
         var showHelp = false;
+        var clip = false;
         var prompt = ">";
         var caseSensitive = false;
         var fontSize = 12;
@@ -189,6 +193,9 @@ internal sealed record CliOptions(
             {
                 case "-h":
                     showHelp = true;
+                    break;
+                case "-clip":
+                    clip = true;
                     break;
                 case "-p" when i + 1 < args.Length:
                     prompt = args[++i];
@@ -277,6 +284,7 @@ internal sealed record CliOptions(
 
         return new CliOptions(
             showHelp,
+            clip,
             prompt,
             caseSensitive,
             fontSize,
@@ -297,6 +305,7 @@ internal sealed record CliOptions(
         "-h\tshows this usage message and exits.\n" +
         "Configuration is loaded from $XDG_CONFIG_HOME/whoamenu/config (or $HOME/.config/whoamenu/config).\n" +
         "Command line flags override configuration file values.\n" +
+        "-clip\tcopies selected output to clipboard in addition to stdout.\n" +
         "-p <prompt>\tdefines a prompt to be displayed before the input area.\n" +
         "-case-sensitive\tmakes matching case sensitive.\n" +
         "-font-size <size>\tdefines the font size.\n" +
@@ -327,7 +336,7 @@ internal sealed record CliOptions(
 
 internal static class Session
 {
-    public static CliOptions Options { get; set; } = new(false, ">", false, 12, null, 0, false, false, 10, null, null, null, null, null, null);
+    public static CliOptions Options { get; set; } = new(false, false, ">", false, 12, null, 0, false, false, 10, null, null, null, null, null, null);
     public static IReadOnlyList<string> Items { get; set; } = Array.Empty<string>();
     public static bool InputPiped { get; set; }
     public static bool Accepted { get; set; }

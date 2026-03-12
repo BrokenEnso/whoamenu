@@ -35,6 +35,7 @@ If `XDG_CONFIG_HOME` is unset, the fallback path is `$HOME/.config/whoamenu/conf
 Command-line flags always override values from the configuration file.
 
 - `-p` prompt text (default: `>`)
+- `-clip` copy selected output to clipboard in addition to printing to `stdout`
 - `-case-sensitive` enable case-sensitive filtering
 - `-font-size` set font size (default: `12`)
 - `-fn` set font family name used throughout the app (default: platform default)

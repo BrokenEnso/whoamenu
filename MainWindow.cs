@@ -236,7 +236,7 @@ public class MainWindow : Window
         return item.Contains(query, StringComparison.OrdinalIgnoreCase);
     }
 
-    private void AcceptSelection()
+    private async void AcceptSelection()
     {
         var result = _list.SelectedItem as string;
         if (string.IsNullOrWhiteSpace(result))
@@ -246,6 +246,27 @@ public class MainWindow : Window
 
         Session.Accepted = !string.IsNullOrWhiteSpace(result);
         Session.Result = result ?? string.Empty;
+
+        if (Session.Accepted && Session.Options.Clip)
+        {
+            try
+            {
+                var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+                if (clipboard is null)
+                {
+                    Console.Error.WriteLine("Warning: clipboard service unavailable.");
+                }
+                else
+                {
+                    await clipboard.SetTextAsync(Session.Result);
+                }
+            }
+            catch
+            {
+                Console.Error.WriteLine("Warning: failed to copy result to clipboard.");
+            }
+        }
+
         Close();
     }
 

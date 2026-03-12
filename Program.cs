@@ -217,7 +217,7 @@ internal sealed record CliOptions(
                 case "-rc":
                     if (i + 1 < args.Length && double.TryParse(args[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedRadius))
                     {
-                        cornerRadius = Math.Max(0, parsedRadius);
+                        cornerRadius = Math.Clamp(parsedRadius, 0, 30); //Using 30 as upper bound, but is likely too high
                         i++;
                     }
 

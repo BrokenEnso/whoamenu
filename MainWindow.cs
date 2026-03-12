@@ -121,7 +121,18 @@ public class MainWindow : Window
             root.Children.Add(_list);
         }
 
-        Content = root;
+        TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
+        Background = Brushes.Transparent;
+        
+        var radius = Session.Options.CornerRadius ?? 0.0;
+        var border = new Border
+        {
+            CornerRadius = new CornerRadius(radius),
+            Background = new SolidColorBrush(Colors.White),
+            ClipToBounds = true,
+            Child = root // Wrap existing content
+        };
+        Content = border;
 
         //Calculating the height(text area + items to display) after the actual item heights are avialable
         Loaded += (_, _) =>

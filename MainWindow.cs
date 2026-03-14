@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Fonts;
@@ -258,7 +259,9 @@ public class MainWindow : Window
                 }
                 else
                 {
+                    
                     await clipboard.SetTextAsync(Session.Result);
+                    await clipboard.FlushAsync();
                 }
             }
             catch

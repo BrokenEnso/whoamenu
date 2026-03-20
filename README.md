@@ -1,6 +1,14 @@
 # whoamenu
 
-A small dmenu-like launcher written in **.NET** using **Avalonia UI**.
+*whoamenu* is a small desktop launcher built with .NET and Avalonia. It works like dmenu.
+
+It reads a list of options from standard input (for example, from a script) or runs on its own, then displays a simple, always-on-top window where you can type to filter options in real time and select an item from the list. It can also be used to collect simple user input for scripts.
+
+It also supports configuration (via a file or command-line options) giving a lot of flexibility when customizing and theming. 
+
+Overall, it’s a lightweight, script-friendly tool for picking options from a list in shell workflows.
+
+Check examples foler for ideas on how to use.
 
 ## Features
 

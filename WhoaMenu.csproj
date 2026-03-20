@@ -14,6 +14,8 @@
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
     <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+    <BuiltInComIteropSupport>false</BuiltInComIteropSupport>
+    <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
   </PropertyGroup>
 
   <ItemGroup>

@@ -12,6 +12,7 @@ public class MainWindow : Window
 {
     private readonly IReadOnlyList<string> _allItems;
     private readonly bool _caseSensitive;
+    private readonly double _backgroundOpacity;
     private readonly TextBox _input;
     private readonly ListBox _list;
     private readonly TextBlock _prompt;
@@ -20,6 +21,7 @@ public class MainWindow : Window
     {
         _allItems = items;
         _caseSensitive = options.CaseSensitive;
+        _backgroundOpacity = options.Transparency ?? 1.0;
         var fontFamily = string.IsNullOrWhiteSpace(options.FontName) ? FontFamily.Default : new FontFamily(options.FontName);
         
         Width = 720;
@@ -29,11 +31,6 @@ public class MainWindow : Window
         if (options.CornerRadius is { } cornerRadius)
         {
             CornerRadius = new CornerRadius(cornerRadius);
-        }
-
-        if (options.Transparency is { } transparency)
-        {
-            Opacity = transparency;
         }
 
         var root = new DockPanel();
@@ -82,37 +79,40 @@ public class MainWindow : Window
 
         if (options.NormalForeground is { } normalForground)
         {
-            _prompt.Foreground = new SolidColorBrush(normalForground);
-            _input.Foreground = new SolidColorBrush(normalForground);
-            _input.Resources["TextControlForegroundPointerOver"] = new SolidColorBrush(normalForground);
-            _input.Resources["TextControlForegroundFocused"] = new SolidColorBrush(normalForground);
-            _list.Foreground = new SolidColorBrush(normalForground);
+            var opaqueForeground = AsOpaque(normalForground);
+            _prompt.Foreground = new SolidColorBrush(opaqueForeground);
+            _input.Foreground = new SolidColorBrush(opaqueForeground);
+            _input.Resources["TextControlForegroundPointerOver"] = new SolidColorBrush(opaqueForeground);
+            _input.Resources["TextControlForegroundFocused"] = new SolidColorBrush(opaqueForeground);
+            _list.Foreground = new SolidColorBrush(opaqueForeground);
         }
 
         if (options.NormalBackground is { } normalBackground)
         {
-            Background = new SolidColorBrush(normalBackground);
-            root.Background = new SolidColorBrush(normalBackground);
-            header.Background = new SolidColorBrush(normalBackground);
-            _input.Background = new SolidColorBrush(normalBackground);
-            _input.Resources["TextControlBackgroundPointerOver"] = new SolidColorBrush(normalBackground);
-            _input.Resources["TextControlBackgroundFocused"] = new SolidColorBrush(normalBackground);
-            _list.Background = new SolidColorBrush(normalBackground);
-            _list.Resources["Background"] = new SolidColorBrush(normalBackground);
-            _list.Resources["SystemControlHighlightListLowBrush"] = new SolidColorBrush(normalBackground);
+            var translucentBackground = WithOpacity(normalBackground);
+            Background = new SolidColorBrush(translucentBackground);
+            root.Background = new SolidColorBrush(translucentBackground);
+            header.Background = new SolidColorBrush(translucentBackground);
+            _input.Background = new SolidColorBrush(translucentBackground);
+            _input.Resources["TextControlBackgroundPointerOver"] = new SolidColorBrush(translucentBackground);
+            _input.Resources["TextControlBackgroundFocused"] = new SolidColorBrush(translucentBackground);
+            _list.Background = new SolidColorBrush(translucentBackground);
+            _list.Resources["Background"] = new SolidColorBrush(translucentBackground);
+            _list.Resources["SystemControlHighlightListLowBrush"] = new SolidColorBrush(translucentBackground);
         }
 
         if(options.SelectedForeground is { } selectedForeground)
         {
-            _list.Resources["SystemControlHighlightAltBaseHighBrush"] = new SolidColorBrush(selectedForeground);
+            _list.Resources["SystemControlHighlightAltBaseHighBrush"] = new SolidColorBrush(AsOpaque(selectedForeground));
         }
 
         if (options.SelectedBackground is { } selectedBackground)
         {
-            _list.Resources["SystemControlHighlightListAccentLowBrush"] = new SolidColorBrush(selectedBackground);
-            _list.Resources["SystemControlHighlightListAccentHighBrush"] = new SolidColorBrush(selectedBackground);
-            _list.Resources["SystemControlHighlightListMediumBrush"] = new SolidColorBrush(selectedBackground);
-            _list.Resources["SystemControlHighlightListAccentMediumBrush"] = new SolidColorBrush(selectedBackground);
+            var translucentSelectedBackground = WithOpacity(selectedBackground);
+            _list.Resources["SystemControlHighlightListAccentLowBrush"] = new SolidColorBrush(translucentSelectedBackground);
+            _list.Resources["SystemControlHighlightListAccentHighBrush"] = new SolidColorBrush(translucentSelectedBackground);
+            _list.Resources["SystemControlHighlightListMediumBrush"] = new SolidColorBrush(translucentSelectedBackground);
+            _list.Resources["SystemControlHighlightListAccentMediumBrush"] = new SolidColorBrush(translucentSelectedBackground);
         }
 
         _list.DoubleTapped += (_, _) => AcceptSelection();
@@ -129,7 +129,7 @@ public class MainWindow : Window
         var border = new Border
         {
             CornerRadius = new CornerRadius(radius),
-            Background = new SolidColorBrush(Colors.White),
+            Background = new SolidColorBrush(WithOpacity(Colors.White)),
             ClipToBounds = true,
             Child = root // Wrap existing content
         };
@@ -169,6 +169,14 @@ public class MainWindow : Window
             Position = new PixelPoint(x, y);
             ApplyFilter();
         }; 
+    }
+
+    private Color AsOpaque(Color color) => new(byte.MaxValue, color.R, color.G, color.B);
+
+    private Color WithOpacity(Color color)
+    {
+        var alpha = (byte)Math.Round(byte.MaxValue * _backgroundOpacity);
+        return new(alpha, color.R, color.G, color.B);
     }
 
     private void HandleInputKeyDown(object? sender, KeyEventArgs e)

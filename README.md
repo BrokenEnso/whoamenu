@@ -1,19 +1,15 @@
 # whoamenu
 
-*whoamenu* is a small desktop launcher built with .NET and Avalonia. It works like dmenu.
+*whoamenu* is a small desktop launcher built with Rust and `eframe`/`egui`. It works like dmenu.
 
-It reads a list of options from standard input (for example, from a script) or runs on its own, then displays a simple, always-on-top window where you can type to filter options in real time and select an item from the list. It can also be used to collect simple user input for scripts.
+It reads a list of options from standard input (for example, from a script) or runs on its own, then displays a simple always-on-top window where you can type to filter options in real time and select an item from the list. It can also be used to collect simple user input for scripts.
 
-It also supports configuration (via a file or command-line options) giving a lot of flexibility when customizing and theming. 
-
-Overall, it’s a lightweight, script-friendly tool for picking options from a list in shell workflows.
-
-Check examples foler for ideas on how to use.
+Configuration can be loaded from a config file and overridden with command-line flags.
 
 ## Features
 
 - Reads menu entries from `stdin`
-- Input only mode when nothing in piped in
+- Input-only mode when nothing is piped in
 - Filters entries as you type
 - Keyboard navigation with `Up` / `Down`
 - `Enter` accepts selected item and prints to `stdout`
@@ -21,19 +17,18 @@ Check examples foler for ideas on how to use.
 - Optional case-sensitive matching
 - Frameless, always-on-top window
 
-<img width="899" height="382" alt="whoamenu-v0 1 0-example config" src="https://github.com/user-attachments/assets/0070f890-b0c1-489f-b8a8-d13fd4e860f2" />
-
-
 ## Usage
 
-Select a program
+Select a program:
+
 ```bash
-printf "firefox\nnotepad\ncalc\n" | whoamenu- -p "Program:"
+printf "firefox\nnotepad\ncalc\n" | whoamenu -p "Program:"
 ```
 
-Get input
+Get input:
+
 ```bash
-whoamenu- -p "What is Sen's real name?"
+whoamenu -p "What is Sen's real name?"
 ```
 
 ### Flags
@@ -42,16 +37,17 @@ Configuration is loaded from `$XDG_CONFIG_HOME/whoamenu/config`.
 If `XDG_CONFIG_HOME` is unset, the fallback path is `$HOME/.config/whoamenu/config`.
 Command-line flags always override values from the configuration file.
 
+- `-h` show help
 - `-p` prompt text (default: `>`)
 - `-clip` copy selected output to clipboard in addition to printing to `stdout`
 - `-case-sensitive` enable case-sensitive filtering
 - `-font-size` set font size (default: `12`)
-- `-fn` set font family name used throughout the app (default: platform default)
-- `-m` choose monitor number (1-based, default: `1`)
-- `-b` place the menu at the bottom of the selected monitor's working area
-- `-t` place the menu at the top of the selected monitor's working area
-- `-l` set number of visible lines and adjust window height (default: `10`)
-- `-rc [radius]` set window corner radius; if omitted, no corner radius value is applied
+- `-fn` set font family name (parsed but not currently applied)
+- `-m` choose monitor number (1-based, currently parsed for compatibility)
+- `-b` place the menu near the bottom (currently parsed for compatibility)
+- `-t` place the menu near the top (currently parsed for compatibility)
+- `-l` set number of visible lines (default: `10`)
+- `-rc [radius]` set window corner radius
 - `-tr` set window transparency/opacity value (`0` to `1`)
 - `-nb` set normal background color (`#RGB`, `#RRGGBB`, or color names)
 - `-nf` set normal foreground color (`#RGB`, `#RRGGBB`, or color names)
@@ -61,18 +57,11 @@ Command-line flags always override values from the configuration file.
 ## Build
 
 ```bash
-dotnet build
+cargo build
 ```
 
-For a self-contained executable, publish for your target runtime:
+Release build:
 
 ```bash
-dotnet publish -c Release -r win-x64 --self-contained true
+cargo build --release
 ```
-
-## Acknoledgements
-
-- Example color scheme: https://github.com/catppuccin/dmenu/
-- Example font: https://github.com/ryanoasis/nerd-fonts
-- Inspiration: https://tools.suckless.org/dmenu/
-- Contagious enthusiasm: https://github.com/BreadOnPenguins/

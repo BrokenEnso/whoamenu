@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::process;
 use std::sync::{Arc, Mutex};
 
-use clap::{Arg, ArgAction, Command};
+use clap::Parser;
 use eframe::egui::{self, Color32, RichText, ScrollArea, ViewportCommand};
 
 fn main() {
@@ -23,11 +23,6 @@ fn main() {
             process::exit(1);
         }
     };
-
-    if options.show_help {
-        println!("{}", CliOptions::usage_text());
-        process::exit(0);
-    }
 
     let input_piped = !io::stdin().is_terminal();
     let items = if input_piped {
@@ -267,7 +262,6 @@ impl eframe::App for WhoaMenuApp {
 
 #[derive(Clone, Debug)]
 struct CliOptions {
-    show_help: bool,
     clip: bool,
     prompt: String,
     case_sensitive: bool,
@@ -287,92 +281,111 @@ struct CliOptions {
 
 impl CliOptions {
     fn parse(args: &[String]) -> Result<Self, String> {
-        let matches = Command::new("whoamenu")
-            .disable_help_flag(true)
-            .arg(Arg::new("help").short('h').action(ArgAction::SetTrue))
-            .arg(
-                Arg::new("clip")
-                    .long("clip")
-                    .visible_alias("clip")
-                    .action(ArgAction::SetTrue),
-            )
-            .arg(Arg::new("prompt").short('p').num_args(1))
-            .arg(
-                Arg::new("case-sensitive")
-                    .long("case-sensitive")
-                    .visible_alias("case-sensitive")
-                    .action(ArgAction::SetTrue),
-            )
-            .arg(
-                Arg::new("font-size")
-                    .long("font-size")
-                    .visible_alias("font-size")
-                    .num_args(1),
-            )
-            .arg(Arg::new("fn").long("fn").visible_alias("fn").num_args(1))
-            .arg(Arg::new("m").short('m').num_args(1))
-            .arg(Arg::new("b").short('b').action(ArgAction::SetTrue))
-            .arg(Arg::new("t").short('t').action(ArgAction::SetTrue))
-            .arg(Arg::new("l").short('l').num_args(1))
-            .arg(
-                Arg::new("rc")
-                    .long("rc")
-                    .visible_alias("rc")
-                    .num_args(0..=1),
-            )
-            .arg(Arg::new("tr").long("tr").visible_alias("tr").num_args(1))
-            .arg(Arg::new("nb").long("nb").visible_alias("nb").num_args(1))
-            .arg(Arg::new("nf").long("nf").visible_alias("nf").num_args(1))
-            .arg(Arg::new("sb").long("sb").visible_alias("sb").num_args(1))
-            .arg(Arg::new("sf").long("sf").visible_alias("sf").num_args(1))
-            .try_get_matches_from(
-                std::iter::once("whoamenu").chain(args.iter().map(|s| s.as_str())),
-            )
-            .map_err(|e| e.to_string())?;
+        let normalized_args = normalize_legacy_flags(args);
+        let cli_args =
+            CliArgs::try_parse_from(std::iter::once("whoamenu".to_string()).chain(normalized_args))
+                .map_err(|e| e.to_string())?;
 
         Ok(Self {
-            show_help: matches.get_flag("help"),
-            clip: matches.get_flag("clip"),
-            prompt: matches
-                .get_one::<String>("prompt")
-                .cloned()
-                .unwrap_or_else(|| ">".to_string()),
-            case_sensitive: matches.get_flag("case-sensitive"),
-            font_size: matches
-                .get_one::<String>("font-size")
-                .and_then(|s| s.parse::<i32>().ok())
-                .unwrap_or(12),
-            _font_name: matches.get_one::<String>("fn").cloned(),
-            _monitor: matches
-                .get_one::<String>("m")
-                .and_then(|s| s.parse::<i32>().ok())
-                .unwrap_or(1)
-                - 1,
-            _bottom: matches.get_flag("b"),
-            _top: matches.get_flag("t"),
-            lines: matches
-                .get_one::<String>("l")
-                .and_then(|s| s.parse::<i32>().ok())
-                .unwrap_or(10)
-                .max(1),
-            _corner_radius: matches
-                .get_one::<String>("rc")
-                .and_then(|s| s.parse::<f32>().ok())
-                .map(|r| r.clamp(0.0, 30.0)),
-            transparency: matches
-                .get_one::<String>("tr")
-                .and_then(|s| s.parse::<f32>().ok())
-                .map(|t| t.clamp(0.0, 1.0)),
-            normal_background: parse_color(matches.get_one::<String>("nb").map(String::as_str))?,
-            normal_foreground: parse_color(matches.get_one::<String>("nf").map(String::as_str))?,
-            selected_background: parse_color(matches.get_one::<String>("sb").map(String::as_str))?,
-            selected_foreground: parse_color(matches.get_one::<String>("sf").map(String::as_str))?,
+            clip: cli_args.clip,
+            prompt: cli_args.prompt,
+            case_sensitive: cli_args.case_sensitive,
+            font_size: cli_args.font_size,
+            _font_name: cli_args.font_name,
+            _monitor: cli_args.monitor - 1,
+            _bottom: cli_args.bottom,
+            _top: cli_args.top,
+            lines: cli_args.lines.max(1),
+            _corner_radius: cli_args.corner_radius.map(|r| r.clamp(0.0, 30.0)),
+            transparency: cli_args.transparency.map(|t| t.clamp(0.0, 1.0)),
+            normal_background: parse_color(cli_args.normal_background.as_deref())?,
+            normal_foreground: parse_color(cli_args.normal_foreground.as_deref())?,
+            selected_background: parse_color(cli_args.selected_background.as_deref())?,
+            selected_foreground: parse_color(cli_args.selected_foreground.as_deref())?,
         })
     }
+}
 
-    fn usage_text() -> &'static str {
-        "Usage: whoamenu [options]\n\n  -h                   Show help\n  -p <prompt>          Prompt text\n  -clip                Copy selected output to clipboard\n  -case-sensitive      Enable case-sensitive filtering\n  -font-size <size>    Set font size\n  -fn <font>           Set font family\n  -m <monitor>         Monitor number (1-based)\n  -b                   Place menu near the bottom\n  -t                   Place menu near the top\n  -l <lines>           Number of visible lines\n  -rc [radius]         Corner radius\n  -tr <opacity>        Window opacity (0..1)\n  -nb <color>          Normal background color\n  -nf <color>          Normal foreground color\n  -sb <color>          Selected background color\n  -sf <color>          Selected foreground color"
-    }
+#[derive(Clone, Debug, Parser)]
+#[command(name = "whoamenu")]
+struct CliArgs {
+    /// Copy selected output to clipboard
+    #[arg(long)]
+    clip: bool,
+
+    /// Prompt text
+    #[arg(short = 'p', default_value = ">")]
+    prompt: String,
+
+    /// Enable case-sensitive filtering
+    #[arg(long = "case-sensitive")]
+    case_sensitive: bool,
+
+    /// Set font size
+    #[arg(long = "font-size", default_value_t = 12)]
+    font_size: i32,
+
+    /// Set font family
+    #[arg(long = "fn")]
+    font_name: Option<String>,
+
+    /// Monitor number (1-based)
+    #[arg(short = 'm', default_value_t = 1)]
+    monitor: i32,
+
+    /// Place menu near the bottom
+    #[arg(short = 'b')]
+    bottom: bool,
+
+    /// Place menu near the top
+    #[arg(short = 't')]
+    top: bool,
+
+    /// Number of visible lines
+    #[arg(short = 'l', default_value_t = 10)]
+    lines: i32,
+
+    /// Corner radius
+    #[arg(long = "rc")]
+    corner_radius: Option<f32>,
+
+    /// Window opacity (0..1)
+    #[arg(long = "tr")]
+    transparency: Option<f32>,
+
+    /// Normal background color
+    #[arg(long = "nb")]
+    normal_background: Option<String>,
+
+    /// Normal foreground color
+    #[arg(long = "nf")]
+    normal_foreground: Option<String>,
+
+    /// Selected background color
+    #[arg(long = "sb")]
+    selected_background: Option<String>,
+
+    /// Selected foreground color
+    #[arg(long = "sf")]
+    selected_foreground: Option<String>,
+}
+
+fn normalize_legacy_flags(args: &[String]) -> Vec<String> {
+    args.iter()
+        .map(|arg| match arg.as_str() {
+            "-clip" => "--clip".to_string(),
+            "-case-sensitive" => "--case-sensitive".to_string(),
+            "-font-size" => "--font-size".to_string(),
+            "-fn" => "--fn".to_string(),
+            "-rc" => "--rc".to_string(),
+            "-tr" => "--tr".to_string(),
+            "-nb" => "--nb".to_string(),
+            "-nf" => "--nf".to_string(),
+            "-sb" => "--sb".to_string(),
+            "-sf" => "--sf".to_string(),
+            _ => arg.clone(),
+        })
+        .collect()
 }
 
 fn parse_color(input: Option<&str>) -> Result<Option<Color32>, String> {

@@ -94,6 +94,7 @@ struct WhoaMenuApp {
     input_piped: bool,
     options: CliOptions,
     shared: Arc<Mutex<SharedState>>,
+    last_window_height: f32,
 }
 
 impl WhoaMenuApp {
@@ -138,6 +139,7 @@ impl WhoaMenuApp {
             input_piped,
             options,
             shared,
+            last_window_height: 0.0,
         };
         app.apply_filter();
         app
@@ -240,23 +242,58 @@ impl eframe::App for WhoaMenuApp {
 
             if self.input_piped {
                 ui.separator();
-                let max_height =
-                    (self.options.lines as f32) * (self.options.font_size as f32 * 1.8);
-                ScrollArea::vertical()
-                    .max_height(max_height)
-                    .show(ui, |ui| {
-                        for (index, item) in self.filtered_items.iter().enumerate() {
-                            let selected = index == self.selected_index;
-                            let response = ui.selectable_label(selected, item);
-                            if response.clicked() {
-                                self.selected_index = index;
-                                self.accept_selection(ctx);
-                                ctx.send_viewport_cmd(ViewportCommand::Close);
-                            }
-                        }
-                    });
+                let row_height = ui.spacing().interact_size.y;
+                let list_height = row_height * self.options.lines as f32;
+
+                ui.allocate_ui_with_layout(
+                    egui::vec2(ui.available_width(), list_height),
+                    egui::Layout::top_down(egui::Align::Min),
+                    |ui| {
+                        ScrollArea::vertical()
+                            .max_height(list_height)
+                            .show(ui, |ui| {
+                                for (index, item) in self.filtered_items.iter().enumerate() {
+                                    let selected = index == self.selected_index;
+                                    let response = ui.add_sized(
+                                        [ui.available_width(), row_height],
+                                        egui::SelectableLabel::new(selected, item),
+                                    );
+
+                                    if response.clicked() {
+                                        self.selected_index = index;
+                                        self.accept_selection(ctx);
+                                        ctx.send_viewport_cmd(ViewportCommand::Close);
+                                    }
+                                }
+                            });
+                    },
+                );
             }
         });
+
+        let row_height = ctx.style().spacing.interact_size.y;
+        let separator_height = if self.input_piped {
+            row_height * 0.5
+        } else {
+            0.0
+        };
+        let list_height = if self.input_piped {
+            row_height * self.options.lines as f32
+        } else {
+            0.0
+        };
+        let text_height = row_height;
+        let frame_padding = 24.0;
+        let target_height = text_height + separator_height + list_height + frame_padding;
+
+        if (target_height - self.last_window_height).abs() > 0.5 {
+            self.last_window_height = target_height;
+            let viewport_width = ctx.screen_rect().width().max(720.0);
+            ctx.send_viewport_cmd(ViewportCommand::InnerSize(egui::vec2(
+                viewport_width,
+                target_height,
+            )));
+        }
     }
 }
 

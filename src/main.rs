@@ -39,11 +39,14 @@ fn main() {
     let state = Arc::new(Mutex::new(SharedState::default()));
     let app_state = Arc::clone(&state);
 
+    let initial_width = 720.0;
+    let initial_height = 320.0;
+
     let viewport = egui::ViewportBuilder::default()
         .with_title("whoamenu")
         .with_decorations(false)
         .with_always_on_top()
-        .with_inner_size([720.0, 320.0])
+        .with_inner_size([initial_width, initial_height])
         .with_transparent(options.transparency.map(|v| v < 1.0).unwrap_or(false));
 
     let native_options = eframe::NativeOptions {
@@ -293,7 +296,18 @@ impl eframe::App for WhoaMenuApp {
                 viewport_width,
                 target_height,
             )));
+            center_window(ctx, viewport_width, target_height);
         }
+    }
+}
+
+fn center_window(ctx: &egui::Context, width: f32, height: f32) {
+    if let Some(monitor_size) = ctx.input(|i| i.viewport().monitor_size) {
+        let centered_x = ((monitor_size.x - width) * 0.5).max(0.0);
+        let centered_y = ((monitor_size.y - height) * 0.5).max(0.0);
+        ctx.send_viewport_cmd(ViewportCommand::OuterPosition(egui::pos2(
+            centered_x, centered_y,
+        )));
     }
 }
 

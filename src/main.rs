@@ -47,6 +47,7 @@ fn main() {
         .with_decorations(false)
         .with_always_on_top()
         .with_inner_size([initial_width, initial_height])
+        .with_visible(false)
         .with_transparent(options.transparency.map(|v| v < 1.0).unwrap_or(false));
 
     let native_options = eframe::NativeOptions {
@@ -297,6 +298,7 @@ impl eframe::App for WhoaMenuApp {
                 target_height,
             )));
             center_window(ctx, viewport_width, target_height);
+            ctx.send_viewport_cmd(ViewportCommand::Visible(true));
         }
     }
 }

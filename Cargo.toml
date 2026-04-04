@@ -1,0 +1,14 @@
+[package]
+name = "whoamenu"
+version = "0.2.0"
+edition = "2021"
+
+[dependencies]
+eframe = { version = "0.31", default-features = true }
+egui = "0.31"
+clap = { version = "4.5", features = ["std", "derive"], default-features = false }
+csscolorparser = "0.7"
+
+[profile.release]
+lto = true
+codegen-units = 1

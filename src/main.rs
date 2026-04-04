@@ -263,6 +263,10 @@ impl eframe::App for WhoaMenuApp {
                                         egui::SelectableLabel::new(selected, item),
                                     );
 
+                                    if selected {
+                                        response.scroll_to_me(Some(egui::Align::TOP));
+                                    }
+
                                     if response.clicked() {
                                         self.selected_index = index;
                                         self.accept_selection(ctx);

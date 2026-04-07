@@ -319,17 +319,21 @@ impl eframe::App for WhoaMenuApp {
                 viewport_width,
                 target_height,
             )));
-            center_window(ctx, viewport_width, target_height);
+            position_window(ctx, viewport_width, target_height, self.options.bottom);
         }
     }
 }
 
-fn center_window(ctx: &egui::Context, width: f32, height: f32) {
+fn position_window(ctx: &egui::Context, width: f32, height: f32, bottom_align: bool) {
     if let Some(monitor_size) = ctx.input(|i| i.viewport().monitor_size) {
         let centered_x = ((monitor_size.x - width) * 0.5).max(0.0);
-        let centered_y = ((monitor_size.y - height) * 0.5).max(0.0);
+        let target_y = if bottom_align {
+            (monitor_size.y - height).max(0.0)
+        } else {
+            ((monitor_size.y - height) * 0.5).max(0.0)
+        };
         ctx.send_viewport_cmd(ViewportCommand::OuterPosition(egui::pos2(
-            centered_x, centered_y,
+            centered_x, target_y,
         )));
     }
 }
@@ -342,7 +346,7 @@ struct CliOptions {
     font_size: i32,
     _font_name: Option<String>,
     _monitor: i32,
-    _bottom: bool,
+    bottom: bool,
     _top: bool,
     lines: i32,
     _corner_radius: Option<f32>,
@@ -367,7 +371,7 @@ impl CliOptions {
             font_size: cli_args.font_size,
             _font_name: cli_args.font_name,
             _monitor: cli_args.monitor - 1,
-            _bottom: cli_args.bottom,
+            bottom: cli_args.bottom,
             _top: cli_args.top,
             lines: cli_args.lines.max(1),
             _corner_radius: cli_args.corner_radius.map(|r| r.clamp(0.0, 30.0)),
@@ -381,7 +385,7 @@ impl CliOptions {
 }
 
 #[derive(Clone, Debug, Parser)]
-#[command(name = "whoamenu")]
+#[command(name = "whoamenu", args_override_self = true, ignore_errors = true)]
 struct CliArgs {
     /// Copy selected output to clipboard
     #[arg(long)]

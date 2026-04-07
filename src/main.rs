@@ -116,6 +116,7 @@ impl WhoaMenuApp {
         cc.egui_ctx.set_style(style);
 
         let mut visuals = egui::Visuals::dark();
+        visuals.window_stroke = egui::Stroke::NONE;
         if let Some(bg) = options.normal_background {
             let fill = apply_opacity(bg, options.transparency.unwrap_or(1.0));
             visuals.panel_fill = fill;
@@ -244,7 +245,6 @@ impl eframe::App for WhoaMenuApp {
             });
 
             if self.input_piped {
-                ui.separator();
                 let row_height = ui.spacing().interact_size.y;
                 let list_height = row_height * self.options.lines as f32;
 
@@ -298,11 +298,6 @@ impl eframe::App for WhoaMenuApp {
         });
 
         let row_height = ctx.style().spacing.interact_size.y;
-        let separator_height = if self.input_piped {
-            row_height * 0.5
-        } else {
-            0.0
-        };
         let list_height = if self.input_piped {
             row_height * self.options.lines as f32
         } else {
@@ -310,7 +305,7 @@ impl eframe::App for WhoaMenuApp {
         };
         let text_height = row_height;
         let frame_padding = 24.0;
-        let target_height = text_height + separator_height + list_height + frame_padding;
+        let target_height = text_height + list_height + frame_padding;
 
         if (target_height - self.last_window_height).abs() > 0.5 {
             self.last_window_height = target_height;

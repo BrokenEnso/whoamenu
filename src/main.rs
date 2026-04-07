@@ -229,73 +229,84 @@ impl eframe::App for WhoaMenuApp {
             return;
         }
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.label(RichText::new(&self.options.prompt).size(self.options.font_size as f32));
+        let panel_frame = egui::Frame::default()
+            .fill(ctx.style().visuals.panel_fill)
+            .inner_margin(egui::Margin::same(0))
+            .outer_margin(egui::Margin::same(0));
 
-                let text_edit = egui::TextEdit::singleline(&mut self.query)
-                    .desired_width(f32::INFINITY)
-                    .font(egui::TextStyle::Body)
-                    .hint_text("Type to filter...");
-                let response = ui.add(text_edit);
-                if response.changed() {
-                    self.apply_filter();
-                }
-                response.request_focus();
-            });
+        egui::CentralPanel::default()
+            .frame(panel_frame)
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label(
+                        RichText::new(&self.options.prompt).size(self.options.font_size as f32),
+                    );
 
-            if self.input_piped {
-                let row_height = ui.spacing().interact_size.y;
-                let list_height = row_height * self.options.lines as f32;
+                    let text_edit = egui::TextEdit::singleline(&mut self.query)
+                        .desired_width(f32::INFINITY)
+                        .font(egui::TextStyle::Body)
+                        .hint_text("Type to filter...");
+                    let response = ui.add(text_edit);
+                    if response.changed() {
+                        self.apply_filter();
+                    }
+                    response.request_focus();
+                });
 
-                ui.allocate_ui_with_layout(
-                    egui::vec2(ui.available_width(), list_height),
-                    egui::Layout::top_down(egui::Align::Min),
-                    |ui| {
-                        ScrollArea::vertical()
-                            .max_height(list_height)
-                            .show(ui, |ui| {
-                                for (index, item) in self.filtered_items.iter().enumerate() {
-                                    let selected = index == self.selected_index;
-                                    let row_width = ui.available_width();
-                                    let (rect, response) = ui.allocate_exact_size(
-                                        egui::vec2(row_width, row_height),
-                                        egui::Sense::click(),
-                                    );
+                if self.input_piped {
+                    let row_height = ui.spacing().interact_size.y;
+                    let list_height = row_height * self.options.lines as f32;
 
-                                    if selected {
-                                        ui.painter().rect_filled(
-                                            rect,
-                                            0.0,
-                                            ui.visuals().selection.bg_fill,
+                    ui.allocate_ui_with_layout(
+                        egui::vec2(ui.available_width(), list_height),
+                        egui::Layout::top_down(egui::Align::Min),
+                        |ui| {
+                            ScrollArea::vertical()
+                                .max_height(list_height)
+                                .show(ui, |ui| {
+                                    for (index, item) in self.filtered_items.iter().enumerate() {
+                                        let selected = index == self.selected_index;
+                                        let row_width = ui.available_width();
+                                        let (rect, response) = ui.allocate_exact_size(
+                                            egui::vec2(row_width, row_height),
+                                            egui::Sense::click(),
                                         );
+
+                                        if selected {
+                                            ui.painter().rect_filled(
+                                                rect,
+                                                0.0,
+                                                ui.visuals().selection.bg_fill,
+                                            );
+                                        }
+
+                                        let text_color = if selected {
+                                            ui.visuals().selection.stroke.color
+                                        } else {
+                                            ui.visuals().text_color()
+                                        };
+
+                                        ui.painter().text(
+                                            egui::pos2(rect.left() + 4.0, rect.center().y),
+                                            egui::Align2::LEFT_CENTER,
+                                            item,
+                                            egui::FontId::proportional(
+                                                self.options.font_size as f32,
+                                            ),
+                                            text_color,
+                                        );
+
+                                        if response.clicked() {
+                                            self.selected_index = index;
+                                            self.accept_selection(ctx);
+                                            ctx.send_viewport_cmd(ViewportCommand::Close);
+                                        }
                                     }
-
-                                    let text_color = if selected {
-                                        ui.visuals().selection.stroke.color
-                                    } else {
-                                        ui.visuals().text_color()
-                                    };
-
-                                    ui.painter().text(
-                                        egui::pos2(rect.left() + 4.0, rect.center().y),
-                                        egui::Align2::LEFT_CENTER,
-                                        item,
-                                        egui::FontId::proportional(self.options.font_size as f32),
-                                        text_color,
-                                    );
-
-                                    if response.clicked() {
-                                        self.selected_index = index;
-                                        self.accept_selection(ctx);
-                                        ctx.send_viewport_cmd(ViewportCommand::Close);
-                                    }
-                                }
-                            });
-                    },
-                );
-            }
-        });
+                                });
+                        },
+                    );
+                }
+            });
 
         let row_height = ctx.style().spacing.interact_size.y;
         let list_height = if self.input_piped {
@@ -304,7 +315,7 @@ impl eframe::App for WhoaMenuApp {
             0.0
         };
         let text_height = row_height;
-        let frame_padding = 24.0;
+        let frame_padding = 0.0;
         let target_height = text_height + list_height + frame_padding;
 
         if (target_height - self.last_window_height).abs() > 0.5 {

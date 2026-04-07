@@ -230,7 +230,6 @@ impl eframe::App for WhoaMenuApp {
         }
 
         let panel_frame = egui::Frame::default()
-            .fill(ctx.style().visuals.panel_fill)
             .inner_margin(egui::Margin::same(0))
             .outer_margin(egui::Margin::same(0));
 

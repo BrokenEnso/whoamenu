@@ -98,6 +98,7 @@ struct WhoaMenuApp {
     options: CliOptions,
     shared: Arc<Mutex<SharedState>>,
     last_window_height: f32,
+    ensure_selected_visible: bool,
 }
 
 impl WhoaMenuApp {
@@ -144,6 +145,7 @@ impl WhoaMenuApp {
             options,
             shared,
             last_window_height: 0.0,
+            ensure_selected_visible: true,
         };
         app.apply_filter();
         app
@@ -162,6 +164,8 @@ impl WhoaMenuApp {
         } else if self.selected_index >= self.filtered_items.len() {
             self.selected_index = self.filtered_items.len() - 1;
         }
+
+        self.ensure_selected_visible = true;
     }
 
     fn matches(&self, item: &str) -> bool {
@@ -181,6 +185,7 @@ impl WhoaMenuApp {
         let max_index = (self.filtered_items.len() - 1) as i32;
         let next = (current + delta).clamp(0, max_index);
         self.selected_index = next as usize;
+        self.ensure_selected_visible = true;
     }
 
     fn accept_selection(&self, ctx: &egui::Context) {
@@ -230,6 +235,7 @@ impl eframe::App for WhoaMenuApp {
         }
 
         let panel_frame = egui::Frame::default()
+            .fill(ctx.style().visuals.panel_fill)
             .inner_margin(egui::Margin::same(0))
             .outer_margin(egui::Margin::same(0));
 
@@ -277,6 +283,9 @@ impl eframe::App for WhoaMenuApp {
                                                 0.0,
                                                 ui.visuals().selection.bg_fill,
                                             );
+                                            if self.ensure_selected_visible {
+                                                ui.scroll_to_rect(rect, None);
+                                            }
                                         }
 
                                         let text_color = if selected {
@@ -297,6 +306,7 @@ impl eframe::App for WhoaMenuApp {
 
                                         if response.clicked() {
                                             self.selected_index = index;
+                                            self.ensure_selected_visible = true;
                                             self.accept_selection(ctx);
                                             ctx.send_viewport_cmd(ViewportCommand::Close);
                                         }
@@ -304,6 +314,7 @@ impl eframe::App for WhoaMenuApp {
                                 });
                         },
                     );
+                    self.ensure_selected_visible = false;
                 }
             });
 

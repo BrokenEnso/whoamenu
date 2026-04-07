@@ -381,7 +381,7 @@ impl CliOptions {
 }
 
 #[derive(Clone, Debug, Parser)]
-#[command(name = "whoamenu")]
+#[command(name = "whoamenu", args_override_self = true, ignore_errors = true)]
 struct CliArgs {
     /// Copy selected output to clipboard
     #[arg(long)]

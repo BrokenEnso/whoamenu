@@ -319,15 +319,29 @@ impl eframe::App for WhoaMenuApp {
                 viewport_width,
                 target_height,
             )));
-            position_window(ctx, viewport_width, target_height, self.options.bottom);
+            position_window(
+                ctx,
+                viewport_width,
+                target_height,
+                self.options.bottom,
+                self.options.top,
+            );
         }
     }
 }
 
-fn position_window(ctx: &egui::Context, width: f32, height: f32, bottom_align: bool) {
+fn position_window(
+    ctx: &egui::Context,
+    width: f32,
+    height: f32,
+    bottom_align: bool,
+    top_align: bool,
+) {
     if let Some(monitor_size) = ctx.input(|i| i.viewport().monitor_size) {
         let centered_x = ((monitor_size.x - width) * 0.5).max(0.0);
-        let target_y = if bottom_align {
+        let target_y = if top_align {
+            0.0
+        } else if bottom_align {
             (monitor_size.y - height).max(0.0)
         } else {
             ((monitor_size.y - height) * 0.5).max(0.0)
@@ -347,7 +361,7 @@ struct CliOptions {
     _font_name: Option<String>,
     _monitor: i32,
     bottom: bool,
-    _top: bool,
+    top: bool,
     lines: i32,
     _corner_radius: Option<f32>,
     transparency: Option<f32>,
@@ -372,7 +386,7 @@ impl CliOptions {
             _font_name: cli_args.font_name,
             _monitor: cli_args.monitor - 1,
             bottom: cli_args.bottom,
-            _top: cli_args.top,
+            top: cli_args.top,
             lines: cli_args.lines.max(1),
             _corner_radius: cli_args.corner_radius.map(|r| r.clamp(0.0, 30.0)),
             transparency: cli_args.transparency.map(|t| t.clamp(0.0, 1.0)),

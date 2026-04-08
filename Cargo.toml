@@ -8,6 +8,7 @@ eframe = { version = "0.31", default-features = true }
 egui = "0.31"
 clap = { version = "4.5", features = ["std", "derive"], default-features = false }
 csscolorparser = "0.7"
+font-kit = "0.14"
 
 [profile.release]
 lto = true

@@ -7,6 +7,8 @@ use std::sync::{Arc, Mutex};
 
 use clap::Parser;
 use eframe::egui::{self, Color32, FontFamily, RichText, ScrollArea, ViewportCommand};
+use font_kit::handle::Handle;
+use font_kit::source::SystemSource;
 
 fn main() {
     let config_args = read_config_args();
@@ -16,13 +18,14 @@ fn main() {
         .chain(cli_args)
         .collect::<Vec<String>>();
 
-    let options = match CliOptions::parse(&merged_args) {
+    let mut options = match CliOptions::parse(&merged_args) {
         Ok(opts) => opts,
         Err(err) => {
             eprintln!("{err}");
             process::exit(1);
         }
     };
+    options.resolve_font_name();
 
     let input_piped = !io::stdin().is_terminal();
     let items = if input_piped {
@@ -109,6 +112,8 @@ impl WhoaMenuApp {
         input_piped: bool,
         shared: Arc<Mutex<SharedState>>,
     ) -> Self {
+        install_configured_font(&cc.egui_ctx, &options);
+
         let mut style = (*cc.egui_ctx.style()).clone();
         style
             .text_styles
@@ -412,6 +417,22 @@ impl CliOptions {
             selected_foreground: parse_color(cli_args.selected_foreground.as_deref())?,
         })
     }
+
+    fn resolve_font_name(&mut self) {
+        let Some(requested_name) = self.font_name.clone() else {
+            return;
+        };
+
+        match find_matching_system_font_name(&requested_name) {
+            Some(matched) => self.font_name = Some(matched),
+            None => {
+                eprintln!(
+                    "Configured font '{requested_name}' was not found in system fonts; using default font"
+                );
+                self.font_name = None;
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug, Parser)]
@@ -522,6 +543,53 @@ fn body_font_id(options: &CliOptions) -> egui::FontId {
         .map(|name| FontFamily::Name(name.into()))
         .unwrap_or(FontFamily::Proportional);
     egui::FontId::new(options.font_size as f32, family)
+}
+
+fn find_matching_system_font_name(requested_name: &str) -> Option<String> {
+    let normalized_requested = requested_name.trim().to_lowercase();
+    if normalized_requested.is_empty() {
+        return None;
+    }
+
+    let source = SystemSource::new();
+    let families = source.all_families().ok()?;
+    families
+        .into_iter()
+        .find(|family_name| family_name.trim().to_lowercase() == normalized_requested)
+}
+
+fn install_configured_font(ctx: &egui::Context, options: &CliOptions) {
+    let Some(font_name) = options.font_name.as_deref() else {
+        return;
+    };
+
+    let source = SystemSource::new();
+    let Ok(handle) = source.select_family_by_name(font_name) else {
+        eprintln!("Failed to open configured font family '{font_name}'");
+        return;
+    };
+    let Some(font_bytes) = font_bytes_from_handle(handle.fonts().first()) else {
+        eprintln!("Failed to load bytes for configured font family '{font_name}'");
+        return;
+    };
+
+    let mut fonts = egui::FontDefinitions::default();
+    fonts.font_data.insert(
+        font_name.to_string(),
+        egui::FontData::from_owned(font_bytes).into(),
+    );
+    fonts.families.insert(
+        FontFamily::Name(font_name.to_owned().into()),
+        vec![font_name.to_string()],
+    );
+    ctx.set_fonts(fonts);
+}
+
+fn font_bytes_from_handle(handle: Option<&Handle>) -> Option<Vec<u8>> {
+    match handle? {
+        Handle::Path { path, .. } => fs::read(path).ok(),
+        Handle::Memory { bytes, .. } => Some(bytes.to_vec()),
+    }
 }
 
 fn read_items<R: BufRead>(reader: R) -> Vec<String> {

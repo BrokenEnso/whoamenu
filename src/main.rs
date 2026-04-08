@@ -243,6 +243,8 @@ impl eframe::App for WhoaMenuApp {
             .frame(panel_frame)
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
+
                     ui.label(
                         RichText::new(&self.options.prompt).size(self.options.font_size as f32),
                     );
@@ -250,6 +252,7 @@ impl eframe::App for WhoaMenuApp {
                     let text_edit = egui::TextEdit::singleline(&mut self.query)
                         .desired_width(f32::INFINITY)
                         .font(egui::TextStyle::Body)
+                        .margin(egui::vec2(0.0, 0.0))
                         .hint_text("Type to filter...");
                     let response = ui.add(text_edit);
                     if response.changed() {
@@ -295,7 +298,7 @@ impl eframe::App for WhoaMenuApp {
                                         };
 
                                         ui.painter().text(
-                                            egui::pos2(rect.left() + 4.0, rect.center().y),
+                                            egui::pos2(rect.left(), rect.center().y),
                                             egui::Align2::LEFT_CENTER,
                                             item,
                                             egui::FontId::proportional(

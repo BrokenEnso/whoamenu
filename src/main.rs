@@ -9,7 +9,6 @@ use clap::Parser;
 use eframe::egui::{self, Color32, FontFamily, RichText, ScrollArea, ViewportCommand};
 use font_kit::handle::Handle;
 use font_kit::source::SystemSource;
-use winit_29::event_loop::EventLoop;
 
 fn main() {
     let config_args = read_config_args();
@@ -426,15 +425,12 @@ fn window_position_for_monitor(
 }
 
 fn detect_monitor(monitor_index: usize) -> Option<MonitorGeometry> {
-    let event_loop = EventLoop::new().ok()?;
-    let mut monitors = event_loop.available_monitors();
-    let monitor = monitors.nth(monitor_index)?;
-    let position = monitor.position();
-    let size = monitor.size();
-    Some(MonitorGeometry {
-        position: egui::pos2(position.x as f32, position.y as f32),
-        size: egui::vec2(size.width as f32, size.height as f32),
-    })
+    if monitor_index > 0 {
+        eprintln!(
+            "Monitor selection is temporarily unavailable due to a startup stability issue; using the active monitor instead"
+        );
+    }
+    None
 }
 
 #[derive(Clone, Debug)]

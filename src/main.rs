@@ -58,7 +58,10 @@ fn main() {
         .with_decorations(false)
         .with_always_on_top()
         .with_inner_size([initial_width, initial_height])
-        .with_transparent(options.transparency.map(|v| v < 1.0).unwrap_or(false));
+        .with_transparent(
+            options.transparency.map(|v| v < 1.0).unwrap_or(false)
+                || options.corner_radius.unwrap_or(0.0) > 0.0,
+        );
     if let Some(position) = initial_position {
         viewport = viewport.with_position(position);
     }
@@ -255,6 +258,7 @@ impl eframe::App for WhoaMenuApp {
 
         let panel_frame = egui::Frame::default()
             .fill(ctx.style().visuals.panel_fill)
+            .corner_radius(egui::CornerRadius::same(self.options.corner_radius_px()))
             .inner_margin(egui::Margin::same(0))
             .outer_margin(egui::Margin::same(0));
 
@@ -505,7 +509,7 @@ struct CliOptions {
     bottom: bool,
     top: bool,
     lines: i32,
-    _corner_radius: Option<f32>,
+    corner_radius: Option<f32>,
     transparency: Option<f32>,
     normal_background: Option<Color32>,
     normal_foreground: Option<Color32>,
@@ -530,13 +534,19 @@ impl CliOptions {
             bottom: cli_args.bottom,
             top: cli_args.top,
             lines: cli_args.lines.max(1),
-            _corner_radius: cli_args.corner_radius.map(|r| r.clamp(0.0, 30.0)),
+            corner_radius: cli_args.corner_radius.map(|r| r.clamp(0.0, 30.0)),
             transparency: cli_args.transparency.map(|t| t.clamp(0.0, 1.0)),
             normal_background: parse_color(cli_args.normal_background.as_deref())?,
             normal_foreground: parse_color(cli_args.normal_foreground.as_deref())?,
             selected_background: parse_color(cli_args.selected_background.as_deref())?,
             selected_foreground: parse_color(cli_args.selected_foreground.as_deref())?,
         })
+    }
+
+    fn corner_radius_px(&self) -> u8 {
+        self.corner_radius
+            .map(|r| r.clamp(0.0, u8::MAX as f32).round() as u8)
+            .unwrap_or(0)
     }
 
     fn resolve_font_name(&mut self) {

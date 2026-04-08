@@ -6,7 +6,7 @@ use std::process;
 use std::sync::{Arc, Mutex};
 
 use clap::Parser;
-use eframe::egui::{self, Color32, RichText, ScrollArea, ViewportCommand};
+use eframe::egui::{self, Color32, FontFamily, RichText, ScrollArea, ViewportCommand};
 
 fn main() {
     let config_args = read_config_args();
@@ -110,10 +110,9 @@ impl WhoaMenuApp {
         shared: Arc<Mutex<SharedState>>,
     ) -> Self {
         let mut style = (*cc.egui_ctx.style()).clone();
-        style.text_styles.insert(
-            egui::TextStyle::Body,
-            egui::FontId::proportional(options.font_size as f32),
-        );
+        style
+            .text_styles
+            .insert(egui::TextStyle::Body, body_font_id(&options));
         cc.egui_ctx.set_style(style);
 
         let mut visuals = egui::Visuals::dark();
@@ -298,9 +297,7 @@ impl eframe::App for WhoaMenuApp {
                                             egui::pos2(rect.left() + 4.0, rect.center().y),
                                             egui::Align2::LEFT_CENTER,
                                             item,
-                                            egui::FontId::proportional(
-                                                self.options.font_size as f32,
-                                            ),
+                                            body_font_id(&self.options),
                                             text_color,
                                         );
 
@@ -374,7 +371,7 @@ struct CliOptions {
     prompt: String,
     case_sensitive: bool,
     font_size: i32,
-    _font_name: Option<String>,
+    font_name: Option<String>,
     _monitor: i32,
     bottom: bool,
     top: bool,
@@ -399,7 +396,7 @@ impl CliOptions {
             prompt: cli_args.prompt,
             case_sensitive: cli_args.case_sensitive,
             font_size: cli_args.font_size,
-            _font_name: cli_args.font_name,
+            font_name: cli_args.font_name,
             _monitor: cli_args.monitor - 1,
             bottom: cli_args.bottom,
             top: cli_args.top,
@@ -513,6 +510,15 @@ fn apply_opacity(color: Color32, opacity: f32) -> Color32 {
 
 fn as_opaque(color: Color32) -> Color32 {
     Color32::from_rgb(color.r(), color.g(), color.b())
+}
+
+fn body_font_id(options: &CliOptions) -> egui::FontId {
+    let family = options
+        .font_name
+        .as_deref()
+        .map(|name| FontFamily::Name(name.into()))
+        .unwrap_or(FontFamily::Proportional);
+    egui::FontId::new(options.font_size as f32, family)
 }
 
 fn read_items<R: BufRead>(reader: R) -> Vec<String> {

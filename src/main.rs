@@ -425,12 +425,73 @@ fn window_position_for_monitor(
 }
 
 fn detect_monitor(monitor_index: usize) -> Option<MonitorGeometry> {
-    if monitor_index > 0 {
-        eprintln!(
-            "Monitor selection is temporarily unavailable due to a startup stability issue; using the active monitor instead"
-        );
+    #[cfg(windows)]
+    {
+        use windows::Win32::Foundation::{BOOL, LPARAM, RECT};
+        use windows::Win32::Graphics::Gdi::{
+            EnumDisplayMonitors, GetMonitorInfoW, HDC, HMONITOR, MONITORINFO,
+        };
+
+        extern "system" fn enum_proc(
+            hmonitor: HMONITOR,
+            _hdc: HDC,
+            _rect: *mut RECT,
+            lparam: LPARAM,
+        ) -> BOOL {
+            let monitors = unsafe { &mut *(lparam.0 as *mut Vec<HMONITOR>) };
+            monitors.push(hmonitor);
+            BOOL(1)
+        }
+
+        let mut monitors: Vec<HMONITOR> = Vec::new();
+        unsafe {
+            EnumDisplayMonitors(
+                HDC::default(),
+                None,
+                Some(enum_proc),
+                LPARAM(&mut monitors as *mut Vec<HMONITOR> as isize),
+            );
+        }
+
+        let hmonitor = monitors.get(monitor_index)?;
+
+        let mut info = MONITORINFO {
+            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+            ..Default::default()
+        };
+        let ok = unsafe { GetMonitorInfoW(*hmonitor, &mut info) };
+        if !ok.as_bool() {
+            return None;
+        }
+
+        let rect = info.rcMonitor;
+        let width = (rect.right - rect.left) as f32;
+        let height = (rect.bottom - rect.top) as f32;
+        let scale = monitor_scale_factor(*hmonitor);
+
+        Some(MonitorGeometry {
+            position: egui::pos2(rect.left as f32 / scale, rect.top as f32 / scale),
+            size: egui::vec2(width / scale, height / scale),
+        })
     }
-    None
+
+    #[cfg(not(windows))]
+    {
+        let _ = monitor_index;
+        None
+    }
+}
+
+#[cfg(windows)]
+fn monitor_scale_factor(hmonitor: windows::Win32::Graphics::Gdi::HMONITOR) -> f32 {
+    use windows::Win32::UI::HiDpi::{GetDpiForMonitor, MDT_EFFECTIVE_DPI};
+
+    let mut dpi_x: u32 = 96;
+    let mut dpi_y: u32 = 96;
+    unsafe {
+        let _ = GetDpiForMonitor(hmonitor, MDT_EFFECTIVE_DPI, &mut dpi_x, &mut dpi_y);
+    }
+    dpi_x as f32 / 96.0
 }
 
 #[derive(Clone, Debug)]

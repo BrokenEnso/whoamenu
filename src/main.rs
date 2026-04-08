@@ -9,6 +9,7 @@ use clap::Parser;
 use eframe::egui::{self, Color32, FontFamily, RichText, ScrollArea, ViewportCommand};
 use font_kit::handle::Handle;
 use font_kit::source::SystemSource;
+use winit_29::event_loop::EventLoop;
 
 fn main() {
     let config_args = read_config_args();
@@ -44,13 +45,24 @@ fn main() {
 
     let initial_width = 720.0;
     let initial_height = 320.0;
+    let monitor = detect_monitor(options.monitor);
+    let initial_position = window_position_for_monitor(
+        monitor.as_ref(),
+        initial_width,
+        initial_height,
+        options.bottom,
+        options.top,
+    );
 
-    let viewport = egui::ViewportBuilder::default()
+    let mut viewport = egui::ViewportBuilder::default()
         .with_title("whoamenu")
         .with_decorations(false)
         .with_always_on_top()
         .with_inner_size([initial_width, initial_height])
         .with_transparent(options.transparency.map(|v| v < 1.0).unwrap_or(false));
+    if let Some(position) = initial_position {
+        viewport = viewport.with_position(position);
+    }
 
     let native_options = eframe::NativeOptions {
         viewport,
@@ -68,6 +80,7 @@ fn main() {
                 app_options,
                 input_piped,
                 app_state,
+                monitor,
             )))
         }),
     );
@@ -102,6 +115,7 @@ struct WhoaMenuApp {
     shared: Arc<Mutex<SharedState>>,
     last_window_height: f32,
     ensure_selected_visible: bool,
+    monitor: Option<MonitorGeometry>,
 }
 
 impl WhoaMenuApp {
@@ -111,6 +125,7 @@ impl WhoaMenuApp {
         options: CliOptions,
         input_piped: bool,
         shared: Arc<Mutex<SharedState>>,
+        monitor: Option<MonitorGeometry>,
     ) -> Self {
         install_configured_font(&cc.egui_ctx, &options);
 
@@ -150,6 +165,7 @@ impl WhoaMenuApp {
             shared,
             last_window_height: 0.0,
             ensure_selected_visible: true,
+            monitor,
         };
         app.apply_filter();
         app
@@ -346,9 +362,16 @@ impl eframe::App for WhoaMenuApp {
                 target_height,
                 self.options.bottom,
                 self.options.top,
+                self.monitor.as_ref(),
             );
         }
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct MonitorGeometry {
+    position: egui::Pos2,
+    size: egui::Vec2,
 }
 
 fn position_window(
@@ -357,20 +380,61 @@ fn position_window(
     height: f32,
     bottom_align: bool,
     top_align: bool,
+    monitor: Option<&MonitorGeometry>,
 ) {
-    if let Some(monitor_size) = ctx.input(|i| i.viewport().monitor_size) {
-        let centered_x = ((monitor_size.x - width) * 0.5).max(0.0);
-        let target_y = if top_align {
-            0.0
-        } else if bottom_align {
-            (monitor_size.y - height).max(0.0)
-        } else {
-            ((monitor_size.y - height) * 0.5).max(0.0)
-        };
-        ctx.send_viewport_cmd(ViewportCommand::OuterPosition(egui::pos2(
-            centered_x, target_y,
-        )));
+    let monitor_geometry = monitor.copied().or_else(|| {
+        ctx.input(|i| {
+            i.viewport().monitor_size.map(|size| MonitorGeometry {
+                position: egui::Pos2::ZERO,
+                size,
+            })
+        })
+    });
+    let Some(monitor_geometry) = monitor_geometry else {
+        return;
+    };
+
+    let position = window_position_for_monitor(
+        Some(&monitor_geometry),
+        width,
+        height,
+        bottom_align,
+        top_align,
+    );
+    if let Some(position) = position {
+        ctx.send_viewport_cmd(ViewportCommand::OuterPosition(position));
     }
+}
+
+fn window_position_for_monitor(
+    monitor: Option<&MonitorGeometry>,
+    width: f32,
+    height: f32,
+    bottom_align: bool,
+    top_align: bool,
+) -> Option<egui::Pos2> {
+    let monitor = monitor?;
+    let centered_x = monitor.position.x + ((monitor.size.x - width) * 0.5).max(0.0);
+    let relative_y = if top_align {
+        0.0
+    } else if bottom_align {
+        (monitor.size.y - height).max(0.0)
+    } else {
+        ((monitor.size.y - height) * 0.5).max(0.0)
+    };
+    Some(egui::pos2(centered_x, monitor.position.y + relative_y))
+}
+
+fn detect_monitor(monitor_index: usize) -> Option<MonitorGeometry> {
+    let event_loop = EventLoop::new().ok()?;
+    let mut monitors = event_loop.available_monitors();
+    let monitor = monitors.nth(monitor_index)?;
+    let position = monitor.position();
+    let size = monitor.size();
+    Some(MonitorGeometry {
+        position: egui::pos2(position.x as f32, position.y as f32),
+        size: egui::vec2(size.width as f32, size.height as f32),
+    })
 }
 
 #[derive(Clone, Debug)]
@@ -380,7 +444,7 @@ struct CliOptions {
     case_sensitive: bool,
     font_size: i32,
     font_name: Option<String>,
-    _monitor: i32,
+    monitor: usize,
     bottom: bool,
     top: bool,
     lines: i32,
@@ -405,7 +469,7 @@ impl CliOptions {
             case_sensitive: cli_args.case_sensitive,
             font_size: cli_args.font_size,
             font_name: cli_args.font_name,
-            _monitor: cli_args.monitor - 1,
+            monitor: cli_args.monitor.saturating_sub(1) as usize,
             bottom: cli_args.bottom,
             top: cli_args.top,
             lines: cli_args.lines.max(1),

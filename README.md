@@ -43,9 +43,9 @@ Command-line flags always override values from the configuration file.
 - `-case-sensitive` enable case-sensitive filtering
 - `-font-size` set font size (default: `12`)
 - `-fn` set font family name
-- `-m` choose monitor number (1-based, currently parsed for compatibility)
-- `-b` place the menu near the bottom (currently parsed for compatibility)
-- `-t` place the menu near the top (currently parsed for compatibility)
+- `-m` choose monitor number (1-based)
+- `-b` place the menu near the bottom
+- `-t` place the menu near the top
 - `-l` set number of visible lines (default: `10`)
 - `-rc [radius]` set window corner radius
 - `-tr` set window transparency/opacity value (`0` to `1`)

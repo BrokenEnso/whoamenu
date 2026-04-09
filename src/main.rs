@@ -262,15 +262,14 @@ impl eframe::App for WhoaMenuApp {
             .inner_margin(egui::Margin::same(0))
             .outer_margin(egui::Margin::same(0));
         let panel_vertical_margin = panel_frame.total_margin().sum().y;
-        let mut prompt_row_height = 0.0_f32;
-        let mut list_container_height = 0.0_f32;
+        let mut panel_content_height = 0.0_f32;
 
         egui::CentralPanel::default()
             .frame(panel_frame)
             .show(ctx, |ui| {
-                let prompt_row = ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
+                ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
 
+                let prompt_row = ui.horizontal(|ui| {
                     ui.label(
                         RichText::new(&self.options.prompt).size(self.options.font_size as f32),
                     );
@@ -286,10 +285,10 @@ impl eframe::App for WhoaMenuApp {
                     }
                     response.request_focus();
                 });
-                prompt_row_height = prompt_row.response.rect.height();
+                let prompt_row_height = prompt_row.response.rect.height();
 
                 if self.input_piped {
-                    let row_height = ui.spacing().interact_size.y;
+                    let row_height = list_row_height(ctx, &self.options).ceil();
                     let visible_rows =
                         usize::min(self.options.lines as usize, self.filtered_items.len());
                     let list_height = (visible_rows as f32 * row_height).max(0.0);
@@ -344,12 +343,15 @@ impl eframe::App for WhoaMenuApp {
                                 });
                         },
                     );
-                    list_container_height = list_container.response.rect.height();
+                    panel_content_height =
+                        prompt_row_height + list_container.response.rect.height();
                     self.ensure_selected_visible = false;
+                } else {
+                    panel_content_height = prompt_row_height;
                 }
             });
 
-        let target_height = prompt_row_height + list_container_height + panel_vertical_margin;
+        let target_height = (panel_content_height + panel_vertical_margin + 2.0).ceil();
 
         if (target_height - self.last_window_height).abs() > 0.5 {
             self.last_window_height = target_height;
@@ -673,6 +675,14 @@ fn body_font_id(options: &CliOptions) -> egui::FontId {
         .map(|name| FontFamily::Name(name.into()))
         .unwrap_or(FontFamily::Proportional);
     egui::FontId::new(options.font_size as f32, family)
+}
+
+fn list_row_height(ctx: &egui::Context, options: &CliOptions) -> f32 {
+    let font_id = body_font_id(options);
+    let text_height = ctx.fonts(|fonts| fonts.row_height(&font_id));
+    let min_interact_height = ctx.style().spacing.interact_size.y;
+    let vertical_padding = ctx.style().spacing.button_padding.y * 2.0;
+    (text_height + vertical_padding).max(min_interact_height)
 }
 
 fn find_matching_system_font_name(requested_name: &str) -> Option<String> {

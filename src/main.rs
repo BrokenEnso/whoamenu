@@ -261,11 +261,14 @@ impl eframe::App for WhoaMenuApp {
             .corner_radius(egui::CornerRadius::same(self.options.corner_radius_px()))
             .inner_margin(egui::Margin::same(0))
             .outer_margin(egui::Margin::same(0));
+        let panel_vertical_margin = panel_frame.total_margin().sum().y;
+        let mut prompt_row_height = 0.0_f32;
+        let mut list_container_height = 0.0_f32;
 
         egui::CentralPanel::default()
             .frame(panel_frame)
             .show(ctx, |ui| {
-                ui.horizontal(|ui| {
+                let prompt_row = ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
 
                     ui.label(
@@ -283,12 +286,17 @@ impl eframe::App for WhoaMenuApp {
                     }
                     response.request_focus();
                 });
+                prompt_row_height = prompt_row.response.rect.height();
 
                 if self.input_piped {
                     let row_height = ui.spacing().interact_size.y;
-                    let list_height = row_height * self.options.lines as f32;
+                    let max_visible_rows = self.options.lines.max(1) as usize;
+                    let visible_rows = self.filtered_items.len().min(max_visible_rows) as f32;
+                    let list_height = (visible_rows * row_height)
+                        .min(row_height * self.options.lines as f32)
+                        .max(0.0);
 
-                    ui.allocate_ui_with_layout(
+                    let list_container = ui.allocate_ui_with_layout(
                         egui::vec2(ui.available_width(), list_height),
                         egui::Layout::top_down(egui::Align::Min),
                         |ui| {
@@ -338,19 +346,12 @@ impl eframe::App for WhoaMenuApp {
                                 });
                         },
                     );
+                    list_container_height = list_container.response.rect.height();
                     self.ensure_selected_visible = false;
                 }
             });
 
-        let row_height = ctx.style().spacing.interact_size.y;
-        let list_height = if self.input_piped {
-            row_height * self.options.lines as f32
-        } else {
-            0.0
-        };
-        let text_height = row_height;
-        let frame_padding = 0.0;
-        let target_height = text_height + list_height + frame_padding;
+        let target_height = prompt_row_height + list_container_height + panel_vertical_margin;
 
         if (target_height - self.last_window_height).abs() > 0.5 {
             self.last_window_height = target_height;

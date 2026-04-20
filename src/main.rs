@@ -288,8 +288,7 @@ impl eframe::App for WhoaMenuApp {
 
                 if self.input_piped {
                     let row_height = list_row_height(ctx, &self.options).ceil();
-                    let visible_rows =
-                        usize::min(self.options.lines as usize, self.filtered_items.len());
+                    let visible_rows = self.options.lines as usize;
                     let list_height = (visible_rows as f32 * row_height).max(0.0);
 
                     let list_container = ui.allocate_ui_with_layout(

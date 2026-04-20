@@ -448,7 +448,7 @@ fn detect_monitor(monitor_index: usize) -> Option<MonitorGeometry> {
 
         let mut monitors: Vec<HMONITOR> = Vec::new();
         unsafe {
-            EnumDisplayMonitors(
+            let _ = EnumDisplayMonitors(
                 HDC::default(),
                 None,
                 Some(enum_proc),

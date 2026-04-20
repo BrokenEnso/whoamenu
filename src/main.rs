@@ -277,8 +277,7 @@ impl eframe::App for WhoaMenuApp {
                     let text_edit = egui::TextEdit::singleline(&mut self.query)
                         .desired_width(f32::INFINITY)
                         .font(egui::TextStyle::Body)
-                        .margin(egui::vec2(0.0, 0.0))
-                        .hint_text("Type to filter...");
+                        .margin(egui::vec2(0.0, 0.0));
                     let response = ui.add(text_edit);
                     if response.changed() {
                         self.apply_filter();

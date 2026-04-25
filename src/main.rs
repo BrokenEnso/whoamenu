@@ -289,7 +289,11 @@ impl eframe::App for WhoaMenuApp {
                 if self.input_piped {
                     let row_height = list_row_height(ctx, &self.options).ceil();
                     let visible_rows = self.options.lines as usize;
-                    let list_height = (visible_rows as f32 * row_height).max(0.0);
+                    let row_spacing = self.options.vertical_spacing as f32;
+                    let visible_row_gaps = visible_rows.saturating_sub(1) as f32;
+                    let list_height = (visible_rows as f32 * row_height
+                        + visible_row_gaps * row_spacing)
+                        .max(0.0);
 
                     let list_container = ui.allocate_ui_with_layout(
                         egui::vec2(ui.available_width(), list_height),
@@ -298,6 +302,7 @@ impl eframe::App for WhoaMenuApp {
                             ScrollArea::vertical()
                                 .max_height(list_height)
                                 .show(ui, |ui| {
+                                    let last_index = self.filtered_items.len().saturating_sub(1);
                                     for (index, item) in self.filtered_items.iter().enumerate() {
                                         let selected = index == self.selected_index;
                                         let row_width = ui.available_width();
@@ -336,6 +341,10 @@ impl eframe::App for WhoaMenuApp {
                                             self.ensure_selected_visible = true;
                                             self.accept_selection(ctx);
                                             ctx.send_viewport_cmd(ViewportCommand::Close);
+                                        }
+
+                                        if row_spacing > 0.0 && index < last_index {
+                                            ui.add_space(row_spacing);
                                         }
                                     }
                                 });
@@ -508,6 +517,7 @@ struct CliOptions {
     bottom: bool,
     top: bool,
     lines: i32,
+    vertical_spacing: i32,
     corner_radius: Option<f32>,
     transparency: Option<f32>,
     normal_background: Option<Color32>,
@@ -533,6 +543,7 @@ impl CliOptions {
             bottom: cli_args.bottom,
             top: cli_args.top,
             lines: cli_args.lines.max(1),
+            vertical_spacing: cli_args.vertical_spacing.max(0),
             corner_radius: cli_args.corner_radius.map(|r| r.clamp(0.0, 30.0)),
             transparency: cli_args.transparency.map(|t| t.clamp(0.0, 1.0)),
             normal_background: parse_color(cli_args.normal_background.as_deref())?,
@@ -604,6 +615,10 @@ struct CliArgs {
     #[arg(short = 'l', default_value_t = 10)]
     lines: i32,
 
+    /// Vertical space between list items
+    #[arg(long = "vs", default_value_t = 0)]
+    vertical_spacing: i32,
+
     /// Corner radius
     #[arg(long = "rc")]
     corner_radius: Option<f32>,
@@ -642,6 +657,7 @@ fn normalize_legacy_flags(args: &[String]) -> Vec<String> {
             "-nf" => "--nf".to_string(),
             "-sb" => "--sb".to_string(),
             "-sf" => "--sf".to_string(),
+            "-vs" => "--vs".to_string(),
             _ => arg.clone(),
         })
         .collect()

@@ -47,6 +47,7 @@ Command-line flags always override values from the configuration file.
 - `-b` place the menu near the bottom
 - `-t` place the menu near the top
 - `-l` set number of visible lines (default: `10`)
+- `-vs` set vertical space between list items in pixels (default: `0`)
 - `-rc [radius]` set window corner radius
 - `-tr` set window transparency/opacity value (`0` to `1`)
 - `-nb` set normal background color (`#RGB`, `#RRGGBB`, or color names)

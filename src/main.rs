@@ -290,9 +290,10 @@ impl eframe::App for WhoaMenuApp {
                     let row_height = list_row_height(ctx, &self.options).ceil();
                     let visible_rows = self.options.lines as usize;
                     let row_spacing = self.options.vertical_spacing as f32;
-                    let per_row_vertical_spacing = row_spacing * 2.0;
-                    let list_height =
-                        (visible_rows as f32 * (row_height + per_row_vertical_spacing)).max(0.0);
+                    let visible_row_gaps = visible_rows.saturating_sub(1) as f32;
+                    let list_height = (visible_rows as f32 * row_height
+                        + visible_row_gaps * row_spacing)
+                        .max(0.0);
 
                     let list_container = ui.allocate_ui_with_layout(
                         egui::vec2(ui.available_width(), list_height),
@@ -301,6 +302,7 @@ impl eframe::App for WhoaMenuApp {
                             ScrollArea::vertical()
                                 .max_height(list_height)
                                 .show(ui, |ui| {
+                                    let last_index = self.filtered_items.len().saturating_sub(1);
                                     for (index, item) in self.filtered_items.iter().enumerate() {
                                         if row_spacing > 0.0 {
                                             ui.add_space(row_spacing);
@@ -345,7 +347,7 @@ impl eframe::App for WhoaMenuApp {
                                             ctx.send_viewport_cmd(ViewportCommand::Close);
                                         }
 
-                                        if row_spacing > 0.0 {
+                                        if row_spacing > 0.0 && index < last_index {
                                             ui.add_space(row_spacing);
                                         }
                                     }

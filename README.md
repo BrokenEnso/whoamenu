@@ -44,8 +44,8 @@ Command-line flags always override values from the configuration file.
 - `-font-size` set font size (default: `12`)
 - `-fn` set font family name
 - `-m` choose monitor number (1-based)
-- `-b` place the menu near the bottom
-- `-t` place the menu near the top
+- `-b` place the menu near the bottom (mutually exclusive with `-t`)
+- `-t` place the menu near the top (mutually exclusive with `-b`)
 - `-l` set number of visible lines (default: `10`)
 - `-vs` set vertical space between list items in pixels (default: `0`)
 - `-rc [radius]` set window corner radius

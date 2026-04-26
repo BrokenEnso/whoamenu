@@ -88,3 +88,28 @@ fn font_bytes_from_handle(handle: Option<&Handle>) -> Option<Vec<u8>> {
         Handle::Memory { bytes, .. } => Some(bytes.to_vec()),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::parse_color;
+    use eframe::egui::Color32;
+
+    #[test]
+    fn parse_color_accepts_named_values() {
+        let parsed = parse_color(Some("red")).expect("named color should parse");
+        assert_eq!(parsed, Some(Color32::from_rgb(255, 0, 0)));
+    }
+
+    #[test]
+    fn parse_color_accepts_hex_values() {
+        let parsed = parse_color(Some("#00ff7f")).expect("hex color should parse");
+        assert_eq!(parsed, Some(Color32::from_rgb(0, 255, 127)));
+    }
+
+    #[test]
+    fn parse_color_returns_error_for_invalid_input() {
+        let err = parse_color(Some("definitely-not-a-color")).expect_err("expected parse error");
+        assert!(err.contains("Invalid color value"));
+        assert!(err.contains("definitely-not-a-color"));
+    }
+}

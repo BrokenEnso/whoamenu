@@ -57,6 +57,40 @@ pub fn window_position_for_monitor(
     Some(egui::pos2(centered_x, monitor.position.y + relative_y))
 }
 
+#[cfg(test)]
+mod tests {
+    use super::{window_position_for_monitor, MonitorGeometry};
+    use eframe::egui::{pos2, vec2};
+
+    fn monitor() -> MonitorGeometry {
+        MonitorGeometry {
+            position: pos2(100.0, 50.0),
+            size: vec2(1000.0, 600.0),
+        }
+    }
+
+    #[test]
+    fn window_position_for_monitor_aligns_top() {
+        let pos = window_position_for_monitor(Some(&monitor()), 400.0, 100.0, false, true)
+            .expect("position expected");
+        assert_eq!(pos, pos2(400.0, 50.0));
+    }
+
+    #[test]
+    fn window_position_for_monitor_aligns_center_by_default() {
+        let pos = window_position_for_monitor(Some(&monitor()), 400.0, 100.0, false, false)
+            .expect("position expected");
+        assert_eq!(pos, pos2(400.0, 300.0));
+    }
+
+    #[test]
+    fn window_position_for_monitor_aligns_bottom() {
+        let pos = window_position_for_monitor(Some(&monitor()), 400.0, 100.0, true, false)
+            .expect("position expected");
+        assert_eq!(pos, pos2(400.0, 550.0));
+    }
+}
+
 pub fn detect_monitor(monitor_index: usize) -> Option<MonitorGeometry> {
     #[cfg(windows)]
     {

@@ -30,6 +30,14 @@ impl CliOptions {
             CliArgs::try_parse_from(std::iter::once("whoamenu".to_string()).chain(normalized_args))
                 .map_err(|e| e.to_string())?;
 
+        if cli_args.bottom && cli_args.top {
+            return Err(
+                "Invalid flags: `-b` (bottom) and `-t` (top) are mutually exclusive. \
+Choose one placement flag only (for example: `whoamenu -b` or `whoamenu -t`)."
+                    .to_string(),
+            );
+        }
+
         Ok(Self {
             clip: cli_args.clip,
             prompt: cli_args.prompt,
@@ -101,11 +109,11 @@ pub struct CliArgs {
     monitor: i32,
 
     /// Place menu near the bottom
-    #[arg(short = 'b')]
+    #[arg(short = 'b', conflicts_with = "top")]
     bottom: bool,
 
     /// Place menu near the top
-    #[arg(short = 't')]
+    #[arg(short = 't', conflicts_with = "bottom")]
     top: bool,
 
     /// Number of visible lines
@@ -178,4 +186,20 @@ pub fn clamp_corner_radius(corner_radius: Option<f32>) -> Option<f32> {
 
 pub fn clamp_transparency(transparency: Option<f32>) -> Option<f32> {
     transparency.map(|opacity| opacity.clamp(0.0, 1.0))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CliOptions;
+
+    #[test]
+    fn parse_rejects_bottom_and_top_together() {
+        let args = vec!["-b".to_string(), "-t".to_string()];
+        let err =
+            CliOptions::parse(&args).expect_err("expected conflicting placement flags to fail");
+
+        assert!(err.contains("mutually exclusive"));
+        assert!(err.contains("`-b`"));
+        assert!(err.contains("`-t`"));
+    }
 }

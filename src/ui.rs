@@ -21,8 +21,10 @@ pub struct SharedState {
 
 pub struct WhoaMenuApp {
     all_items: Vec<String>,
+    all_items_normalized: Option<Vec<(String, String)>>,
     filtered_items: Vec<String>,
     query: String,
+    query_lower: String,
     selected_index: usize,
     input_piped: bool,
     options: CliOptions,
@@ -69,10 +71,19 @@ impl WhoaMenuApp {
         }
         cc.egui_ctx.set_visuals(visuals);
 
+        let all_items_normalized = (!options.case_sensitive).then(|| {
+            all_items
+                .iter()
+                .map(|item| (item.clone(), item.to_lowercase()))
+                .collect()
+        });
+
         let mut app = Self {
             all_items,
+            all_items_normalized,
             filtered_items: Vec::new(),
             query: String::new(),
+            query_lower: String::new(),
             selected_index: 0,
             input_piped,
             options,
@@ -86,12 +97,24 @@ impl WhoaMenuApp {
     }
 
     fn apply_filter(&mut self) {
-        self.filtered_items = self
-            .all_items
-            .iter()
-            .filter(|item| self.matches(item))
-            .cloned()
-            .collect();
+        self.filtered_items = if self.options.case_sensitive {
+            self.all_items
+                .iter()
+                .filter(|item| self.matches(item, None))
+                .cloned()
+                .collect()
+        } else {
+            self.all_items_normalized
+                .as_ref()
+                .map(|items| {
+                    items
+                        .iter()
+                        .filter(|(original, normalized)| self.matches(original, Some(normalized)))
+                        .map(|(original, _)| original.clone())
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
 
         if self.filtered_items.is_empty() {
             self.selected_index = 0;
@@ -102,12 +125,21 @@ impl WhoaMenuApp {
         self.ensure_selected_visible = true;
     }
 
-    fn matches(&self, item: &str) -> bool {
+    fn matches(&self, item: &str, item_normalized: Option<&str>) -> bool {
         if self.options.case_sensitive {
             item.contains(&self.query)
         } else {
-            item.to_lowercase().contains(&self.query.to_lowercase())
+            item_normalized
+                .unwrap_or(item)
+                .contains(self.query_lower.as_str())
         }
+    }
+
+    fn refresh_query_cache(&mut self) {
+        if self.options.case_sensitive {
+            return;
+        }
+        self.query_lower = self.query.to_lowercase();
     }
 
     fn move_selection(&mut self, delta: i32) {
@@ -175,6 +207,7 @@ impl WhoaMenuApp {
                 .margin(egui::vec2(0.0, 0.0));
             let response = ui.add(text_edit);
             if response.changed() {
+                self.refresh_query_cache();
                 self.apply_filter();
             }
             response.request_focus();

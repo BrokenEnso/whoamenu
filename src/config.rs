@@ -64,3 +64,26 @@ pub fn tokenize_config_line(line: &str) -> Vec<String> {
 
     tokens
 }
+
+#[cfg(test)]
+mod tests {
+    use super::tokenize_config_line;
+
+    #[test]
+    fn tokenize_config_line_handles_quoted_tokens() {
+        let tokens = tokenize_config_line(r#"--prompt "hello world" --flag"#);
+        assert_eq!(tokens, vec!["--prompt", "hello world", "--flag"]);
+    }
+
+    #[test]
+    fn tokenize_config_line_collapses_multiple_spaces() {
+        let tokens = tokenize_config_line("  --lines   10    --vs   2  ");
+        assert_eq!(tokens, vec!["--lines", "10", "--vs", "2"]);
+    }
+
+    #[test]
+    fn tokenize_config_line_keeps_comment_like_text_as_data() {
+        let tokens = tokenize_config_line(r##"--prompt "#not-a-comment" --clip"##);
+        assert_eq!(tokens, vec!["--prompt", "#not-a-comment", "--clip"]);
+    }
+}

@@ -190,7 +190,7 @@ pub fn clamp_transparency(transparency: Option<f32>) -> Option<f32> {
 
 #[cfg(test)]
 mod tests {
-    use super::CliOptions;
+    use super::{normalize_legacy_flags, CliOptions};
 
     #[test]
     fn parse_rejects_bottom_and_top_together() {
@@ -201,5 +201,35 @@ mod tests {
         assert!(err.contains("mutually exclusive"));
         assert!(err.contains("`-b`"));
         assert!(err.contains("`-t`"));
+    }
+
+    #[test]
+    fn normalize_legacy_flags_converts_known_legacy_flags() {
+        let args = vec![
+            "-clip".to_string(),
+            "-font-size".to_string(),
+            "12".to_string(),
+            "-vs".to_string(),
+            "2".to_string(),
+        ];
+
+        let normalized = normalize_legacy_flags(&args);
+        assert_eq!(
+            normalized,
+            vec!["--clip", "--font-size", "12", "--vs", "2"]
+        );
+    }
+
+    #[test]
+    fn normalize_legacy_flags_passes_through_unknown_flags_and_values() {
+        let args = vec![
+            "--prompt".to_string(),
+            "hello".to_string(),
+            "-x".to_string(),
+            "custom".to_string(),
+        ];
+
+        let normalized = normalize_legacy_flags(&args);
+        assert_eq!(normalized, args);
     }
 }

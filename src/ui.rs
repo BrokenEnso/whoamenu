@@ -8,6 +8,11 @@ use crate::style::{
     apply_opacity, as_opaque, body_font_id, install_configured_font, list_row_height,
 };
 
+enum Action {
+    Accept,
+    Cancel,
+}
+
 #[derive(Default)]
 pub struct SharedState {
     pub accepted: bool,
@@ -139,14 +144,10 @@ impl WhoaMenuApp {
         state.accepted = false;
         state.result.clear();
     }
-}
 
-impl eframe::App for WhoaMenuApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn handle_global_keys(&mut self, ctx: &egui::Context) -> Option<Action> {
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
-            self.cancel_selection();
-            ctx.send_viewport_cmd(ViewportCommand::Close);
-            return;
+            return Some(Action::Cancel);
         }
 
         if ctx.input(|i| i.key_pressed(egui::Key::ArrowDown)) {
@@ -158,7 +159,129 @@ impl eframe::App for WhoaMenuApp {
         }
 
         if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
-            self.accept_selection(ctx);
+            return Some(Action::Accept);
+        }
+
+        None
+    }
+
+    fn render_prompt_row(&mut self, ui: &mut egui::Ui) -> f32 {
+        let prompt_row = ui.horizontal(|ui| {
+            ui.label(RichText::new(&self.options.prompt).size(self.options.font_size as f32));
+
+            let text_edit = egui::TextEdit::singleline(&mut self.query)
+                .desired_width(f32::INFINITY)
+                .font(egui::TextStyle::Body)
+                .margin(egui::vec2(0.0, 0.0));
+            let response = ui.add(text_edit);
+            if response.changed() {
+                self.apply_filter();
+            }
+            response.request_focus();
+        });
+
+        prompt_row.response.rect.height()
+    }
+
+    fn render_list(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) -> f32 {
+        if !self.input_piped {
+            return 0.0;
+        }
+
+        let row_height = list_row_height(ctx, &self.options).ceil();
+        let visible_rows = self.options.lines as usize;
+        let row_spacing = self.options.vertical_spacing as f32;
+        let visible_row_gaps = visible_rows.saturating_sub(1) as f32;
+        let list_height =
+            (visible_rows as f32 * row_height + visible_row_gaps * row_spacing).max(0.0);
+
+        let list_container = ui.allocate_ui_with_layout(
+            egui::vec2(ui.available_width(), list_height),
+            egui::Layout::top_down(egui::Align::Min),
+            |ui| {
+                ScrollArea::vertical()
+                    .max_height(list_height)
+                    .show(ui, |ui| {
+                        let last_index = self.filtered_items.len().saturating_sub(1);
+                        for (index, item) in self.filtered_items.iter().enumerate() {
+                            let selected = index == self.selected_index;
+                            let row_width = ui.available_width();
+                            let (rect, response) = ui.allocate_exact_size(
+                                egui::vec2(row_width, row_height),
+                                egui::Sense::click(),
+                            );
+
+                            if selected {
+                                ui.painter()
+                                    .rect_filled(rect, 0.0, ui.visuals().selection.bg_fill);
+                                if self.ensure_selected_visible {
+                                    ui.scroll_to_rect(rect, None);
+                                }
+                            }
+
+                            let text_color = if selected {
+                                ui.visuals().selection.stroke.color
+                            } else {
+                                ui.visuals().text_color()
+                            };
+
+                            ui.painter().text(
+                                egui::pos2(rect.left(), rect.center().y),
+                                egui::Align2::LEFT_CENTER,
+                                item,
+                                body_font_id(&self.options),
+                                text_color,
+                            );
+
+                            if response.clicked() {
+                                self.selected_index = index;
+                                self.ensure_selected_visible = true;
+                                self.accept_selection(ctx);
+                                ctx.send_viewport_cmd(ViewportCommand::Close);
+                            }
+
+                            if row_spacing > 0.0 && index < last_index {
+                                ui.add_space(row_spacing);
+                            }
+                        }
+                    });
+            },
+        );
+
+        self.ensure_selected_visible = false;
+        list_container.response.rect.height()
+    }
+
+    fn resize_and_reposition(&mut self, ctx: &egui::Context, content_height: f32) {
+        let target_height = content_height.ceil();
+        if (target_height - self.last_window_height).abs() <= 0.5 {
+            return;
+        }
+
+        self.last_window_height = target_height;
+        let viewport_width = ctx.screen_rect().width().max(720.0);
+        ctx.send_viewport_cmd(ViewportCommand::InnerSize(egui::vec2(
+            viewport_width,
+            target_height,
+        )));
+        position_window(
+            ctx,
+            viewport_width,
+            target_height,
+            self.options.bottom,
+            self.options.top,
+            self.monitor.as_ref(),
+        );
+    }
+}
+
+impl eframe::App for WhoaMenuApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if let Some(action) = self.handle_global_keys(ctx) {
+            match action {
+                Action::Accept => self.accept_selection(ctx),
+                Action::Cancel => self.cancel_selection(),
+            }
             ctx.send_viewport_cmd(ViewportCommand::Close);
             return;
         }
@@ -175,113 +298,11 @@ impl eframe::App for WhoaMenuApp {
             .frame(panel_frame)
             .show(ctx, |ui| {
                 ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
-
-                let prompt_row = ui.horizontal(|ui| {
-                    ui.label(
-                        RichText::new(&self.options.prompt).size(self.options.font_size as f32),
-                    );
-
-                    let text_edit = egui::TextEdit::singleline(&mut self.query)
-                        .desired_width(f32::INFINITY)
-                        .font(egui::TextStyle::Body)
-                        .margin(egui::vec2(0.0, 0.0));
-                    let response = ui.add(text_edit);
-                    if response.changed() {
-                        self.apply_filter();
-                    }
-                    response.request_focus();
-                });
-                let prompt_row_height = prompt_row.response.rect.height();
-
-                if self.input_piped {
-                    let row_height = list_row_height(ctx, &self.options).ceil();
-                    let visible_rows = self.options.lines as usize;
-                    let row_spacing = self.options.vertical_spacing as f32;
-                    let visible_row_gaps = visible_rows.saturating_sub(1) as f32;
-                    let list_height = (visible_rows as f32 * row_height
-                        + visible_row_gaps * row_spacing)
-                        .max(0.0);
-
-                    let list_container = ui.allocate_ui_with_layout(
-                        egui::vec2(ui.available_width(), list_height),
-                        egui::Layout::top_down(egui::Align::Min),
-                        |ui| {
-                            ScrollArea::vertical()
-                                .max_height(list_height)
-                                .show(ui, |ui| {
-                                    let last_index = self.filtered_items.len().saturating_sub(1);
-                                    for (index, item) in self.filtered_items.iter().enumerate() {
-                                        let selected = index == self.selected_index;
-                                        let row_width = ui.available_width();
-                                        let (rect, response) = ui.allocate_exact_size(
-                                            egui::vec2(row_width, row_height),
-                                            egui::Sense::click(),
-                                        );
-
-                                        if selected {
-                                            ui.painter().rect_filled(
-                                                rect,
-                                                0.0,
-                                                ui.visuals().selection.bg_fill,
-                                            );
-                                            if self.ensure_selected_visible {
-                                                ui.scroll_to_rect(rect, None);
-                                            }
-                                        }
-
-                                        let text_color = if selected {
-                                            ui.visuals().selection.stroke.color
-                                        } else {
-                                            ui.visuals().text_color()
-                                        };
-
-                                        ui.painter().text(
-                                            egui::pos2(rect.left(), rect.center().y),
-                                            egui::Align2::LEFT_CENTER,
-                                            item,
-                                            body_font_id(&self.options),
-                                            text_color,
-                                        );
-
-                                        if response.clicked() {
-                                            self.selected_index = index;
-                                            self.ensure_selected_visible = true;
-                                            self.accept_selection(ctx);
-                                            ctx.send_viewport_cmd(ViewportCommand::Close);
-                                        }
-
-                                        if row_spacing > 0.0 && index < last_index {
-                                            ui.add_space(row_spacing);
-                                        }
-                                    }
-                                });
-                        },
-                    );
-                    panel_content_height =
-                        prompt_row_height + list_container.response.rect.height();
-                    self.ensure_selected_visible = false;
-                } else {
-                    panel_content_height = prompt_row_height;
-                }
+                let prompt_row_height = self.render_prompt_row(ui);
+                let list_height = self.render_list(ui, ctx);
+                panel_content_height = prompt_row_height + list_height;
             });
 
-        let target_height = (panel_content_height + panel_vertical_margin + 2.0).ceil();
-
-        if (target_height - self.last_window_height).abs() > 0.5 {
-            self.last_window_height = target_height;
-            let viewport_width = ctx.screen_rect().width().max(720.0);
-            ctx.send_viewport_cmd(ViewportCommand::InnerSize(egui::vec2(
-                viewport_width,
-                target_height,
-            )));
-            position_window(
-                ctx,
-                viewport_width,
-                target_height,
-                self.options.bottom,
-                self.options.top,
-                self.monitor.as_ref(),
-            );
-        }
+        self.resize_and_reposition(ctx, panel_content_height + panel_vertical_margin + 2.0);
     }
 }

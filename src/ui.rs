@@ -44,6 +44,7 @@ impl WhoaMenuApp {
         monitor: Option<MonitorGeometry>,
     ) -> Self {
         install_configured_font(&cc.egui_ctx, &options);
+        let opacity = options.transparency.unwrap_or(1.0);
 
         let mut style = (*cc.egui_ctx.style()).clone();
         style
@@ -54,7 +55,7 @@ impl WhoaMenuApp {
         let mut visuals = egui::Visuals::dark();
         visuals.window_stroke = egui::Stroke::NONE;
         if let Some(bg) = options.normal_background {
-            let fill = apply_opacity(bg, options.transparency.unwrap_or(1.0));
+            let fill = apply_opacity(bg, opacity);
             visuals.panel_fill = fill;
             visuals.window_fill = fill;
             visuals.extreme_bg_color = fill;
@@ -64,12 +65,38 @@ impl WhoaMenuApp {
             visuals.override_text_color = Some(as_opaque(fg));
         }
         if let Some(sel_bg) = options.selected_background {
-            visuals.selection.bg_fill = apply_opacity(sel_bg, options.transparency.unwrap_or(1.0));
+            visuals.selection.bg_fill = apply_opacity(sel_bg, opacity);
         }
         if let Some(sel_fg) = options.selected_foreground {
             visuals.selection.stroke.color = as_opaque(sel_fg);
         }
+        visuals.widgets.noninteractive.bg_fill =
+            apply_opacity(visuals.widgets.noninteractive.bg_fill, opacity);
+        visuals.widgets.noninteractive.weak_bg_fill =
+            apply_opacity(visuals.widgets.noninteractive.weak_bg_fill, opacity);
+        visuals.widgets.inactive.bg_fill = apply_opacity(visuals.widgets.inactive.bg_fill, opacity);
+        visuals.widgets.inactive.weak_bg_fill =
+            apply_opacity(visuals.widgets.inactive.weak_bg_fill, opacity);
+        visuals.widgets.hovered.bg_fill = apply_opacity(visuals.widgets.hovered.bg_fill, opacity);
+        visuals.widgets.hovered.weak_bg_fill =
+            apply_opacity(visuals.widgets.hovered.weak_bg_fill, opacity);
+        visuals.widgets.active.bg_fill = apply_opacity(visuals.widgets.active.bg_fill, opacity);
+        visuals.widgets.active.weak_bg_fill =
+            apply_opacity(visuals.widgets.active.weak_bg_fill, opacity);
+        visuals.widgets.open.bg_fill = apply_opacity(visuals.widgets.open.bg_fill, opacity);
+        visuals.widgets.open.weak_bg_fill =
+            apply_opacity(visuals.widgets.open.weak_bg_fill, opacity);
         cc.egui_ctx.set_visuals(visuals);
+        if options.transparency.is_some() {
+            eprintln!(
+                "Transparency debug: tr={:.3}, nb_alpha={:?}, sb_alpha={:?}, panel_alpha={}, textedit_alpha={}",
+                opacity,
+                options.normal_background.map(|c| c.a()),
+                options.selected_background.map(|c| c.a()),
+                cc.egui_ctx.style().visuals.panel_fill.a(),
+                cc.egui_ctx.style().visuals.widgets.inactive.bg_fill.a()
+            );
+        }
 
         let all_items_normalized = (!options.case_sensitive).then(|| {
             all_items

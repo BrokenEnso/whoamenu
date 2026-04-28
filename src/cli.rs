@@ -214,10 +214,7 @@ mod tests {
         ];
 
         let normalized = normalize_legacy_flags(&args);
-        assert_eq!(
-            normalized,
-            vec!["--clip", "--font-size", "12", "--vs", "2"]
-        );
+        assert_eq!(normalized, vec!["--clip", "--font-size", "12", "--vs", "2"]);
     }
 
     #[test]

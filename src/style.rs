@@ -75,6 +75,14 @@ pub fn install_configured_font(ctx: &egui::Context, options: &CliOptions) {
         font_name.to_string(),
         egui::FontData::from_owned(font_bytes).into(),
     );
+
+    if let Some(proportional_family) = fonts.families.get_mut(&FontFamily::Proportional) {
+        proportional_family.insert(0, font_name.to_string());
+    }
+    if let Some(monospace_family) = fonts.families.get_mut(&FontFamily::Monospace) {
+        monospace_family.insert(0, font_name.to_string());
+    }
+
     fonts.families.insert(
         FontFamily::Name(font_name.to_owned().into()),
         vec![font_name.to_string()],

@@ -83,9 +83,14 @@ pub fn install_configured_font(ctx: &egui::Context, options: &CliOptions) {
         monospace_family.insert(0, font_name.to_string());
     }
 
+    let mut configured_family_stack = vec![font_name.to_string()];
+    if let Some(proportional_family) = fonts.families.get(&FontFamily::Proportional) {
+        configured_family_stack.extend(proportional_family.iter().cloned());
+    }
+
     fonts.families.insert(
         FontFamily::Name(font_name.to_owned().into()),
-        vec![font_name.to_string()],
+        configured_family_stack,
     );
     ctx.set_fonts(fonts);
 }

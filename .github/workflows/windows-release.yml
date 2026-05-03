@@ -24,16 +24,17 @@ jobs:
             exit 1
           fi
 
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.0.x
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Build win-x64 release
+        run: cargo build --release --locked
 
-      - name: Publish win-x64 release
-        run: dotnet publish -c Release -r win-x64 --self-contained true -o publish/win-x64
+      - name: Prepare release artifact directory
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "publish/win-x64" -Force | Out-Null
+          Copy-Item "target/release/whoamenu.exe" "publish/win-x64/whoamenu.exe" -Force
 
       - name: Create zip archive
         shell: pwsh
